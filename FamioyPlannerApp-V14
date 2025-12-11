@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Hub App</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -113,7 +115,7 @@
             { type: 'verse', text: "For God so loved the world that he gave His only begotten Son, that whoever believes in Him should not perish but have everlasting life.", ref: "John 3:16" },
         ];
         
-        const MUSIC_URL = 'path/to/family_jingle.mp3'; // Placeholder for music file
+        const MUSIC_URL = 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Sample-OGG-File.ogg'; // Using a real, publicly accessible .ogg sample file for reliable testing
 
         const getLocalISODate = (date) => date.toISOString().substring(0, 10);
         
@@ -358,7 +360,8 @@
 
             // Media/Audio State
             const audioRef = useRef(null);
-            const [music, setMusic] = useState(false);
+            // Music starts unmuted and attempts to play on load
+            const [music, setMusic] = useState(true); 
             const [isPlayingVerse, setIsPlayingVerse] = useState(false);
 
             // --- EFFECTS ---
@@ -388,15 +391,28 @@
                 }
             }, []); 
 
-            // Handle music play/pause
+            // Handle music play/pause (FIXED: Added immediate play logic and removed muted attribute from audio tag)
             useEffect(() => {
-                if (audioRef.current) {
-                    if (music) {
-                        audioRef.current.play();
-                    } else {
-                        audioRef.current.pause();
-                    }
+                const audio = audioRef.current;
+                if (!audio) return;
+
+                if (music) {
+                    // Start playing only if it's currently paused or stopped
+                    audio.play().catch(error => {
+                        // This catch block handles the browser's autoplay policy restriction
+                        console.log("Autoplay was prevented. User needs to interact to start music.");
+                    });
+                } else {
+                    audio.pause();
                 }
+
+                // Clean up any pending play promise when component unmounts
+                return () => {
+                    if (audio) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                };
             }, [music]);
             
             const toggleVerse = (content) => {
@@ -466,6 +482,9 @@
             }
             
             const handleAddFamilyMember = () => {
+                if (!currentUser || (currentUser.role !== 'dad' && currentUser.role !== 'mom')) {
+                    return alert("Only Dad or Mom can add new family members.");
+                }
                 if (!addMemberName.trim()) return alert("Please enter a name for the new family member.");
                 if (family.members.length >= 6) return alert("Maximum of 6 family members reached.");
                 
@@ -483,6 +502,9 @@
             }
             
             const handleDeleteFamilyMember = (memberName) => {
+                if (!currentUser || (currentUser.role !== 'dad' && currentUser.role !== 'mom')) {
+                    return alert("Only Dad or Mom can delete family members.");
+                }
                 if (family.members.length <= 1) {
                     return alert("You must keep at least one family member.");
                 }
@@ -751,7 +773,7 @@
                         <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm text-center">
                             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
                             <h2 className="text-xl font-bold text-white mb-2">Security Check</h2>
-                            <p className="text-white/40 text-xs mb-6">Key: FAMILY-1234</p>
+                            <p className="text-white/40 text-xs mb-6">Key: FAMILY-1234 (Placeholder for Firebase License)</p>
                             <input id="lic" placeholder="XXXX-XXXX" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-center text-white tracking-widest uppercase mb-6 outline-none"/>
                             <button 
                                 onClick={async () => {
@@ -760,6 +782,8 @@
                                     
                                     if (isValid) {
                                         setView('app');
+                                        // Auto-play music on transition, since user interaction is guaranteed here
+                                        setMusic(true); 
                                     } else {
                                         alert('Invalid License Key.');
                                     }
@@ -774,9 +798,14 @@
             }
 
             // 3. MAIN APP
+            
+            // Check if current user is Dad or Mom
+            const isParent = currentUser && (currentUser.role === 'dad' || currentUser.role === 'mom');
+
             return (
                 <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-700`}> 
-                    <audio ref={audioRef} src={MUSIC_URL} loop muted={!music} volume={music ? 0.5 : 0} />
+                    {/* MUSIC FIX: Removed the 'muted' attribute from the audio tag, allowing the useEffect to control play/pause */}
+                    <audio ref={audioRef} src={MUSIC_URL} loop />
 
                     {/* Main content area */}
                     <main className="flex-1 overflow-y-auto pb-28"> 
@@ -790,6 +819,7 @@
                                             <h1 className="text-2xl font-extrabold text-white">Welcome The {family.name}s</h1>
                                             <p className="text-xs font-bold text-white/60 uppercase tracking-[0.1em] mt-1">{currentUser.name}'s Space</p>
                                         </div>
+                                        {/* Music Toggle */}
                                         <button onClick={()=>setMusic(!music)} className={`p-3 rounded-full glass transition ${music?'text-emerald-400':'text-white/30'}`}>
                                             <Icon name={music?'Music':'MusicOff'} active={music}/>
                                         </button>
@@ -1084,58 +1114,60 @@
                                 
                                 <div className="space-y-8">
                                     
-                                    {/* 1. Manage Family Members */}
-                                    <div>
-                                        <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Family Members</h3>
-                                        <div className="glass p-4 rounded-xl space-y-3">
-                                            {family.members.map((m) => (
-                                                <div key={m.name} className="flex justify-between items-center p-2 rounded-lg bg-black/10">
-                                                    <div className="flex items-center gap-3">
-                                                        <Avatar type={m.role} />
-                                                        <span className="text-white font-bold">{m.name}</span>
-                                                        <span className="text-white/60 text-xs">({m.role})</span>
+                                    {/* 1. Manage Family Members (RESTRICTED TO PARENTS) */}
+                                    {isParent && (
+                                        <div>
+                                            <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Family Members</h3>
+                                            <div className="glass p-4 rounded-xl space-y-3">
+                                                {family.members.map((m) => (
+                                                    <div key={m.name} className="flex justify-between items-center p-2 rounded-lg bg-black/10">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar type={m.role} />
+                                                            <span className="text-white font-bold">{m.name}</span>
+                                                            <span className="text-white/60 text-xs">({m.role})</span>
+                                                        </div>
+                                                        
+                                                        <button 
+                                                            onClick={() => handleDeleteFamilyMember(m.name)} 
+                                                            className={`p-2 rounded-lg text-white transition-all ${
+                                                                family.members.length <= 1 
+                                                                    ? 'bg-gray-700/50 cursor-not-allowed' 
+                                                                    : 'bg-red-600/50 hover:bg-red-700/50'
+                                                            }`}
+                                                            disabled={family.members.length <= 1}
+                                                            title={family.members.length <= 1 ? "Cannot delete the last member" : "Delete Member"}
+                                                        >
+                                                            <Icon name="Trash" />
+                                                        </button>
                                                     </div>
-                                                    
-                                                    <button 
-                                                        onClick={() => handleDeleteFamilyMember(m.name)} 
-                                                        className={`p-2 rounded-lg text-white transition-all ${
-                                                            family.members.length <= 1 
-                                                                ? 'bg-gray-700/50 cursor-not-allowed' 
-                                                                : 'bg-red-600/50 hover:bg-red-700/50'
-                                                        }`}
-                                                        disabled={family.members.length <= 1}
-                                                        title={family.members.length <= 1 ? "Cannot delete the last member" : "Delete Member"}
-                                                    >
-                                                        <Icon name="Trash" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <div className="pt-2">
-                                                <input 
-                                                    value={addMemberName} 
-                                                    onChange={e => setAddMemberName(e.target.value)} 
-                                                    placeholder="New Member Name" 
-                                                    className="w-full bg-white/10 border border-white/10 rounded-lg p-3 text-white outline-none mb-2"
-                                                />
-                                                <div className="flex gap-3 items-center">
-                                                    <label className="text-white/60 text-xs">Role:</label>
-                                                    <select 
-                                                        value={addMemberRole} 
-                                                        onChange={e => setAddMemberRole(e.target.value)} 
-                                                        className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white outline-none"
-                                                    >
-                                                        <option value="dad">Dad</option>
-                                                        <option value="mom">Mom</option>
-                                                        <option value="boy">Boy</option>
-                                                        <option value="girl">Girl</option>
-                                                    </select>
-                                                    <button onClick={handleAddFamilyMember} className="p-2 bg-blue-600/50 rounded-lg text-white hover:bg-blue-700/50">
-                                                        <Icon name="Add" />
-                                                    </button>
+                                                ))}
+                                                <div className="pt-2">
+                                                    <input 
+                                                        value={addMemberName} 
+                                                        onChange={e => setAddMemberName(e.target.value)} 
+                                                        placeholder="New Member Name" 
+                                                        className="w-full bg-white/10 border border-white/10 rounded-lg p-3 text-white outline-none mb-2"
+                                                    />
+                                                    <div className="flex gap-3 items-center">
+                                                        <label className="text-white/60 text-xs">Role:</label>
+                                                        <select 
+                                                            value={addMemberRole} 
+                                                            onChange={e => setAddMemberRole(e.target.value)} 
+                                                            className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white outline-none"
+                                                        >
+                                                            <option value="dad">Dad</option>
+                                                            <option value="mom">Mom</option>
+                                                            <option value="boy">Boy</option>
+                                                            <option value="girl">Girl</option>
+                                                        </select>
+                                                        <button onClick={handleAddFamilyMember} className="p-2 bg-blue-600/50 rounded-lg text-white hover:bg-blue-700/50">
+                                                            <Icon name="Add" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* 2. Theme Selection */}
                                     <div>
@@ -1192,7 +1224,7 @@
                                             
                                             {/* Speed (Rate) Control */}
                                             <div>
-                                                <label className="text-white/60 text-sm block mb-1">Speed (Rate): {speechConfig.rate.toFixed(1)} (0.1 - 2.0)</label> {/* Changed max to 2.0 for a more useful range */}
+                                                <label className="text-white/60 text-sm block mb-1">Speed (Rate): {speechConfig.rate.toFixed(1)} (0.1 - 2.0)</label> 
                                                 <input 
                                                     type="range" 
                                                     min="0.1" 
