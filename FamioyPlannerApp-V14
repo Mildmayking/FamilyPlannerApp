@@ -99,7 +99,11 @@
             forest: { name: 'Forest', bg: 'bg-green-900', accent: 'bg-green-600' }
         };
 
-        const MOCK_EVENTS = []; 
+        const MOCK_EVENTS = [
+            { id: 101, title: "Dentist Appointment", date: "2025-12-11T10:00:00.000Z", owner: "Dad" },
+            { id: 102, title: "Soccer Practice", date: "2025-12-11T16:30:00.000Z", owner: "Boy" },
+            { id: 103, title: "Birthday Party", date: "2025-12-15T14:00:00.000Z", owner: "Mom" }
+        ]; 
 
         const MOCK_CONTENT = [
             { type: 'verse', text: "Do everything in love, with a heart of charity and kindness towards all others.", ref: "1 Corinthians 16:14" },
@@ -477,6 +481,32 @@
                 setAddMemberRole('boy');
                 alert(`${newMember.name} has been added to the family!`);
             }
+            
+            const handleDeleteFamilyMember = (memberName) => {
+                if (family.members.length <= 1) {
+                    return alert("You must keep at least one family member.");
+                }
+
+                if (window.confirm(`Are you sure you want to delete ${memberName}? This will also delete all of their notes and events.`)) {
+                    // 1. Delete Member
+                    const updatedMembers = family.members.filter(m => m.name !== memberName);
+                    setFamily({...family, members: updatedMembers});
+
+                    // 2. Delete Member's Events
+                    setEvents(prevEvents => prevEvents.filter(e => e.owner !== memberName));
+
+                    // 3. Delete Member's Notes/Drawings
+                    setSavedNotes(prevNotes => prevNotes.filter(n => n.owner !== memberName));
+
+                    // 4. Switch current user if the deleted member was active
+                    if (currentUser && currentUser.name === memberName) {
+                        setCurrentUser(updatedMembers[0]);
+                    }
+                    
+                    alert(`${memberName} has been permanently removed.`);
+                }
+            }
+
 
             // --- CALENDAR LOGIC ---
 
@@ -526,6 +556,7 @@
             const getEventsForSelectedDay = useMemo(() => {
                 if (!currentUser) return [];
                 const dateStr = getLocalISODate(currentCalendarDate);
+                // Filter by selected day AND current user
                 return events.filter(e => e.owner === currentUser.name && getLocalISODate(new Date(e.date)) === dateStr)
                              .sort((a,b) => new Date(a.date) - new Date(b.date));
             }, [events, currentUser, currentCalendarDate]);
@@ -539,7 +570,7 @@
 
                 const datePart = currentCalendarDate.toISOString().substring(0, 10); 
                 
-                const localDateTimeString = `${datePart} ${eventTime}`;
+                const localDateTimeString = `${datePart}T${eventTime}:00`; // Assuming time is HH:MM and adding seconds
                 const eventDateObject = new Date(localDateTimeString);
                 const dateTimeISO = eventDateObject.toISOString();
 
@@ -552,6 +583,13 @@
 
                 setEvents(prev => [...prev, newEvent]);
                 setInputTitle('');
+            }
+            
+            const handleDeleteEvent = (eventId) => {
+                 if (window.confirm("Are you sure you want to delete this event?")) {
+                    setEvents(prev => prev.filter(e => e.id !== eventId));
+                    alert("Event deleted.");
+                }
             }
             
             // --- VOICE INPUT (COMMON) ---
@@ -691,9 +729,14 @@
 
                             <button onClick={()=>{
                                 const n = document.getElementById('famName').value || "Ebot";
-                                if(family.members.length===0) return alert("Add at least 1 member");
-                                const finalFam = {...family, name: n};
-                                setCurrentUser(finalFam.members[0]);
+                                if(family.members.length===0) {
+                                    const defaultMember = {name: "Dad", role: "dad", theme: "royal", pref: "both", voice: speechConfig};
+                                    setFamily({...family, name: n, members: [defaultMember]});
+                                    setCurrentUser(defaultMember);
+                                } else {
+                                    const finalFam = {...family, name: n};
+                                    setCurrentUser(finalFam.members[0]);
+                                }
                                 setView('license');
                             }} className={`w-full py-4 text-white font-bold rounded-2xl bg-blue-600 shadow-lg shadow-blue-500/20`}>Next Step</button>
                         </div>
@@ -702,6 +745,7 @@
             }
 
             if (view === 'license') {
+                // NOTE: I remember you have a license task for Firebase on 2025-12-06. This placeholder is for that system.
                 return (
                     <div className={`h-full flex items-center justify-center p-8 bg-black`}>
                         <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm text-center">
@@ -852,6 +896,7 @@
                                                 const daysInMonth = getDaysInMonth(currentMonth.getFullYear(), currentMonth.getMonth());
                                                 const firstDay = daysInMonth[0].getDay(); 
                                                 const todayStr = getLocalISODate(new Date()); 
+                                                const selectedDayStr = getLocalISODate(currentCalendarDate);
                                                 
                                                 const blanks = Array(firstDay).fill(null);
                                                 
@@ -860,6 +905,7 @@
 
                                                     const dayStr = getLocalISODate(day); 
                                                     const isToday = dayStr === todayStr;
+                                                    const isSelected = dayStr === selectedDayStr;
                                                     const dayEvents = events.filter(e => e.owner === currentUser?.name && getLocalISODate(new Date(e.date)) === dayStr); 
 
                                                     return (
@@ -870,13 +916,14 @@
                                                                 setCalendarView('dayDetail');
                                                             }}
                                                             className={`p-1 rounded-lg transition text-sm font-bold flex flex-col items-center justify-center relative min-h-[40px] ${
+                                                                isSelected ? currentTheme.accent + ' text-white' :
                                                                 isToday ? 'bg-white/10 text-white border border-white/30' : 
                                                                 'hover:bg-white/10 text-white/80'
                                                             }`}
                                                         >
                                                             {day.getDate()}
                                                             {dayEvents.length > 0 && (
-                                                                <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-red-400"></div>
+                                                                <div className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-red-400'}`}></div>
                                                             )}
                                                         </button>
                                                     );
@@ -944,10 +991,17 @@
                                             ) : (
                                                 getEventsForSelectedDay.map(e => (
                                                     <div key={e.id} className="p-3 rounded-xl bg-black/10 flex justify-between items-center">
-                                                        <span className="font-bold text-white text-sm">{e.title}</span>
-                                                        <span className="font-mono text-white/60 text-xs bg-black/20 px-2 py-1 rounded">
-                                                            {new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                                                        </span>
+                                                        <div className="flex-1">
+                                                            <span className="font-bold text-white text-sm block">{e.title}</span>
+                                                            <span className="font-mono text-white/60 text-xs">{new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => handleDeleteEvent(e.id)} 
+                                                            className="p-1 ml-4 rounded-full bg-red-500/50 text-white hover:bg-red-600 transition"
+                                                            title="Delete Event"
+                                                        >
+                                                            <Icon name="Trash" />
+                                                        </button>
                                                     </div>
                                                 ))
                                             )}
@@ -957,7 +1011,7 @@
                             </div>
                         )}
                         
-                        {/* --- NOTES TAB (WITH FIXED DRAW PAD) --- */}
+                        {/* --- NOTES TAB --- */}
                         {tab === 'notes' && (
                             <div className="pt-10 px-6 fade-in">
                                 <h2 className="text-3xl font-bold mb-6">Creative Studio</h2>
@@ -1029,7 +1083,61 @@
                                 <p className="text-sm text-white/50 mb-8">Personalize {currentUser.name}'s Experience</p>
                                 
                                 <div className="space-y-8">
-                                    {/* 1. Theme Selection */}
+                                    
+                                    {/* 1. Manage Family Members */}
+                                    <div>
+                                        <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Family Members</h3>
+                                        <div className="glass p-4 rounded-xl space-y-3">
+                                            {family.members.map((m) => (
+                                                <div key={m.name} className="flex justify-between items-center p-2 rounded-lg bg-black/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar type={m.role} />
+                                                        <span className="text-white font-bold">{m.name}</span>
+                                                        <span className="text-white/60 text-xs">({m.role})</span>
+                                                    </div>
+                                                    
+                                                    <button 
+                                                        onClick={() => handleDeleteFamilyMember(m.name)} 
+                                                        className={`p-2 rounded-lg text-white transition-all ${
+                                                            family.members.length <= 1 
+                                                                ? 'bg-gray-700/50 cursor-not-allowed' 
+                                                                : 'bg-red-600/50 hover:bg-red-700/50'
+                                                        }`}
+                                                        disabled={family.members.length <= 1}
+                                                        title={family.members.length <= 1 ? "Cannot delete the last member" : "Delete Member"}
+                                                    >
+                                                        <Icon name="Trash" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <div className="pt-2">
+                                                <input 
+                                                    value={addMemberName} 
+                                                    onChange={e => setAddMemberName(e.target.value)} 
+                                                    placeholder="New Member Name" 
+                                                    className="w-full bg-white/10 border border-white/10 rounded-lg p-3 text-white outline-none mb-2"
+                                                />
+                                                <div className="flex gap-3 items-center">
+                                                    <label className="text-white/60 text-xs">Role:</label>
+                                                    <select 
+                                                        value={addMemberRole} 
+                                                        onChange={e => setAddMemberRole(e.target.value)} 
+                                                        className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white outline-none"
+                                                    >
+                                                        <option value="dad">Dad</option>
+                                                        <option value="mom">Mom</option>
+                                                        <option value="boy">Boy</option>
+                                                        <option value="girl">Girl</option>
+                                                    </select>
+                                                    <button onClick={handleAddFamilyMember} className="p-2 bg-blue-600/50 rounded-lg text-white hover:bg-blue-700/50">
+                                                        <Icon name="Add" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Theme Selection */}
                                     <div>
                                         <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Color Theme ({currentUser.theme})</h3>
                                         <div className="grid grid-cols-4 gap-3">
@@ -1039,7 +1147,7 @@
                                         </div>
                                     </div>
                                     
-                                    {/* 2. Content Preference */}
+                                    {/* 3. Content Preference */}
                                     <div>
                                         <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Content Preference</h3>
                                         <div className="glass p-1 rounded-xl flex">
@@ -1049,35 +1157,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* 3. Add Family Member */}
-                                    <div>
-                                        <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Add Family Member</h3>
-                                        <div className="glass p-4 rounded-xl space-y-3">
-                                            <input 
-                                                value={addMemberName} 
-                                                onChange={e => setAddMemberName(e.target.value)} 
-                                                placeholder="New Member Name" 
-                                                className="w-full bg-white/10 border border-white/10 rounded-lg p-3 text-white outline-none"
-                                            />
-                                            <div className="flex gap-3 items-center">
-                                                <label className="text-white/60 text-xs">Role:</label>
-                                                <select 
-                                                    value={addMemberRole} 
-                                                    onChange={e => setAddMemberRole(e.target.value)} 
-                                                    className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white outline-none"
-                                                >
-                                                    <option value="dad">Dad</option>
-                                                    <option value="mom">Mom</option>
-                                                    <option value="boy">Boy</option>
-                                                    <option value="girl">Girl</option>
-                                                </select>
-                                                <button onClick={handleAddFamilyMember} className="p-2 bg-blue-600/50 rounded-lg text-white">
-                                                    <Icon name="Add" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     {/* 4. Voice Controls */}
                                     <div>
                                         <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Voice Settings</h3>
@@ -1113,7 +1192,7 @@
                                             
                                             {/* Speed (Rate) Control */}
                                             <div>
-                                                <label className="text-white/60 text-sm block mb-1">Speed (Rate): {speechConfig.rate.toFixed(1)} (0.1 - 10.0)</label>
+                                                <label className="text-white/60 text-sm block mb-1">Speed (Rate): {speechConfig.rate.toFixed(1)} (0.1 - 2.0)</label> {/* Changed max to 2.0 for a more useful range */}
                                                 <input 
                                                     type="range" 
                                                     min="0.1" 
