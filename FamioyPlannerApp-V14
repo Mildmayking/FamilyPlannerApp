@@ -10,7 +10,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
-        /* Changed to a more legible cursive font and added shadow for contrast */
         @import url('https://fonts.googleapis.com/css2?family=Sacramento&display=swap'); 
 
         body, #root {
@@ -33,9 +32,9 @@
         }
 
         .font-verse {
-            font-family: 'Sacramento', cursive; /* Updated Font */
-            font-weight: 400; /* Ensure it uses the available weight */
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Added for better contrast */
+            font-family: 'Sacramento', cursive; 
+            font-weight: 400; 
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); 
         }
 
         .calendar-grid {
@@ -49,8 +48,8 @@
             display: none;
         }
         .hide-scroll {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; 
+            scrollbar-width: none; 
         }
 
         /* Animation Classes */
@@ -73,6 +72,11 @@
         .pb-safe {
             padding-bottom: constant(safe-area-inset-bottom);
             padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Ensure the canvas element fills its container without external scroll */
+        .drawing-canvas {
+            touch-action: none; /* Prevents scroll/zoom on mobile when drawing */
         }
     </style>
 </head>
@@ -105,7 +109,6 @@
 
         const getLocalISODate = (date) => date.toISOString().substring(0, 10);
         
-        // Helper to get all days in a specific month
         const getDaysInMonth = (year, month) => {
             const date = new Date(year, month, 1);
             const days = [];
@@ -124,13 +127,13 @@
         // --- ICON Component (Simplified SVG Placeholder) ---
         const Icon = ({ name, active }) => {
             const color = active ? 'white' : 'white/20';
-            const size = '6'; // Tailwind size class (w-6 h-6)
+            const size = '6'; 
             
             const icons = {
                 Home: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>,
                 Calendar: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>,
                 Notes: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>,
-                Settings: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.245.54 3.125.105z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>,
+                Settings: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.245.54 3.125.105zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>,
                 Music: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55a4 4 0 102 3.45V7h4V3h-6zM10 19a2 2 0 11-4 0 2 2 0 014 0z"/></svg>,
                 MusicOff: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M4.27 3L3 4.27l9 9v.55a4 4 0 102 3.45V14.27l6.73 6.73L21 19.73 4.27 3zM10 19a2 2 0 11-4 0 2 2 0 014 0z"/></svg>,
                 Play: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18V6l12 6-12 6z"/></svg>,
@@ -139,7 +142,7 @@
                 Mic: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-2c0 3.97-3.33 7.1-7.3 7.1S4.7 15.97 4.7 12H3c0 4.84 3.96 8.8 8.8 8.9V24h2.4v-3.1c4.84-.1 8.8-4.06 8.8-8.9h-1.7z"/></svg>
             };
             
-            return icons[name] || <div className={`w-${size} h-${size} bg-red-500 rounded`}></div>; // Fallback
+            return icons[name] || <div className={`w-${size} h-${size} bg-red-500 rounded`}></div>; 
         };
 
         // --- AVATAR Component (Simplified) ---
@@ -154,27 +157,150 @@
             return icons[type] || icons.default;
         };
         
-        // --- DrawPad Component (MOCK) ---
-        const DrawPad = ({ onSave }) => {
+        // --- DrawPad Component (SIMPLIFIED for debugging) ---
+        const DRAWING_COLORS = ['#FFFFFF', '#FF0000', '#000000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF'];
+        const DrawPad = ({ onSaveDrawing, currentUser }) => {
             const canvasRef = useRef(null);
+            const [tool, setTool] = useState('pen'); 
+            const [color, setColor] = useState(DRAWING_COLORS[0]);
+            const [isDrawing, setIsDrawing] = useState(false);
             
-            // This is a minimal mock for UI consistency. Actual drawing logic is complex.
-            useEffect(() => {
+            const ctxRef = useRef(null);
+
+            const getCanvasContext = () => {
+                if (canvasRef.current && !ctxRef.current) {
+                    ctxRef.current = canvasRef.current.getContext('2d');
+                }
+                return ctxRef.current;
+            };
+
+            const setupCanvas = () => {
                 const canvas = canvasRef.current;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 3;
-                ctx.lineCap = "round";
-            }, []);
+                if (!canvas || !canvas.parentElement) return;
+                
+                const containerRect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = containerRect.width;
+                canvas.height = containerRect.height;
+                
+                const ctx = getCanvasContext();
+                if (ctx) {
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            };
+
+            useEffect(() => {
+                if (canvasRef.current) {
+                    setupCanvas();
+                }
+            }, [canvasRef.current]); 
+
+            const getMousePos = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                if (clientX === undefined || clientY === undefined) return null;
+
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            };
             
+            const startDraw = (e) => {
+                e.preventDefault(); 
+                const ctx = getCanvasContext();
+                const pos = getMousePos(e);
+                if (!ctx || !pos) return;
+
+                setIsDrawing(true);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            };
+            
+            const draw = (e) => {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const ctx = getCanvasContext();
+                const pos = getMousePos(e);
+                if (!ctx || !pos) return;
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 5;
+                ctx.lineCap = "round";
+
+                if (tool === 'pen') {
+                    ctx.lineTo(pos.x, pos.y);
+                    ctx.stroke();
+                }
+                // Removed complex shape drawing logic for debugging
+            };
+
+            const endDraw = () => {
+                if (!isDrawing) return;
+                setIsDrawing(false);
+            };
+            
+            const handleClear = () => {
+                const ctx = getCanvasContext();
+                if(ctx && canvasRef.current) {
+                    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    setupCanvas(); 
+                }
+            }
+            
+            const handleSave = () => {
+                if (!canvasRef.current || !currentUser) return;
+
+                const imageDataUrl = canvasRef.current.toDataURL('image/png');
+                onSaveDrawing(prev => [{
+                    id: Date.now(),
+                    type: 'draw',
+                    content: imageDataUrl,
+                    owner: currentUser.name,
+                    timestamp: new Date().toISOString()
+                }, ...prev]);
+                handleClear(); 
+                alert("Drawing Saved!");
+            }
+
             return (
                 <div className="glass rounded-[2rem] p-6">
-                    <canvas ref={canvasRef} width="300" height="200" className="w-full h-48 bg-white/5 rounded-xl border border-white/10 mb-4"></canvas>
+                    <div className="flex justify-around items-center mb-4 p-2 glass rounded-xl text-white/80">
+                        {/* Color Picker */}
+                        <div className="flex gap-2">
+                            {DRAWING_COLORS.map(c => (
+                                <button key={c} onClick={() => setColor(c)} className={`w-6 h-6 rounded-full border-2 transition-all ${color === c ? 'scale-110 border-white' : 'border-transparent'}`} style={{backgroundColor: c}}></button>
+                            ))}
+                        </div>
+                        
+                        {/* Tool Selector - Only Pen remains */}
+                        <div className="flex gap-2 text-white">
+                            <button onClick={() => setTool('pen')} className={`p-2 rounded-lg transition-all ${tool === 'pen' ? 'bg-blue-600/50' : 'bg-white/10'}`}>
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M14 20.25v-3.875l4.5-4.5 3.5 3.5-4.5 4.5h-3.5zm3.5-5l-4.5 4.5-3.5-3.5 4.5-4.5 3.5 3.5zM3 17.25l1.5 1.5-1.5 1.5v-3z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* The Canvas Element Container */}
+                    <div className="w-full h-64 mb-4">
+                        <canvas 
+                            ref={canvasRef} 
+                            className="w-full h-full bg-white/5 rounded-xl border border-white/10 cursor-crosshair drawing-canvas"
+                            onMouseDown={startDraw}
+                            onMouseMove={draw}
+                            onMouseUp={endDraw}
+                            onMouseLeave={endDraw} 
+                            onTouchStart={startDraw}
+                            onTouchMove={draw}
+                            onTouchEnd={endDraw}
+                        ></canvas>
+                    </div>
+                    
                     <div className="flex justify-between items-center">
-                        <button onClick={() => { /* clear canvas logic */ }} className="px-4 py-2 rounded-lg font-bold text-xs bg-red-600/50 text-white/70">Clear</button>
-                        <button className={`px-4 py-2 rounded-lg font-bold text-xs ${THEMES.royal.accent}`} onClick={onSave}>Save Drawing</button>
+                        <button onClick={handleClear} className="px-4 py-2 rounded-lg font-bold text-xs bg-red-600/50 text-white/70 hover:bg-red-700 transition">Clear</button>
+                        <button className={`px-4 py-2 rounded-lg font-bold text-xs ${THEMES.royal.accent} hover:bg-blue-700 transition`} onClick={handleSave}>Save Drawing</button>
                     </div>
                 </div>
             )
@@ -183,9 +309,8 @@
 
         // --- MAIN APP COMPONENT ---
         const App = () => {
-            // Initial Auth State
-            const [view, setView] = useState('auth'); // 'auth', 'license', 'app'
-            const [tab, setTab] = useState('home'); // 'home', 'calendar', 'notes', 'settings'
+            const [view, setView] = useState('auth'); 
+            const [tab, setTab] = useState('home'); 
             
             // Family/User State
             const [family, setFamily] = useState({ name: '', members: [] });
@@ -194,11 +319,11 @@
             
             // Auth View State
             const [newMemName, setNewMemName] = useState('');
-            const [newMemRole, setNewMemRole] = useState('dad'); // Default role
+            const [newMemRole, setNewMemRole] = useState('dad'); 
             
             // Calendar View State
             const [events, setEvents] = useState(MOCK_EVENTS); 
-            const [calendarView, setCalendarView] = useState('grid'); // 'grid' (month), 'dayDetail'
+            const [calendarView, setCalendarView] = useState('grid'); 
             const [currentMonth, setCurrentMonth] = useState(new Date());
             const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
             const [dashboardDate, setDashboardDate] = useState(new Date());
@@ -206,8 +331,10 @@
             const [inputTitle, setInputTitle] = useState('');
             
             // Notes View State
-            const [noteMode, setNoteMode] = useState('type'); // 'type', 'draw'
+            const [noteMode, setNoteMode] = useState('type'); 
             const [noteText, setNoteText] = useState('');
+            const [isListening, setIsListening] = useState(false);
+            const [savedNotes, setSavedNotes] = useState([]); 
 
             // Media/Audio State
             const audioRef = useRef(null);
@@ -227,31 +354,37 @@
                 }
             }, [music]);
             
-            // Modified to include reference in speech
             const toggleVerse = (content) => {
                 if(isPlayingVerse) {
                     window.speechSynthesis.cancel();
                     setIsPlayingVerse(false);
                 } else {
-                    // Create a spoken string including the text and the formatted reference
                     const [bookChapter, verseNumber] = content.ref.split(':');
                     const spokenReference = `${bookChapter.replace(/(\d+)/g, ' $1,')}, verse ${verseNumber}`;
                     const spokenText = `${content.text}. ${spokenReference}`;
                     
                     const utterance = new SpeechSynthesisUtterance(spokenText);
-                    // Use a slightly slower rate for verse reading
                     utterance.rate = 0.9; 
                     utterance.onend = () => setIsPlayingVerse(false);
                     window.speechSynthesis.speak(utterance);
                     setIsPlayingVerse(true);
                 }
             };
+            
+            // Text-to-Speech for Saved Notes
+            const readNoteAloud = (text) => {
+                 if(window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0; 
+                window.speechSynthesis.speak(utterance);
+            }
 
             // --- HANDLERS ---
             
             const handleSwitchUser = (member) => {
                 setCurrentUser(member);
-                // Reset to home tab if switching user
                 setTab('home'); 
             }
 
@@ -307,7 +440,6 @@
 
             const getDashboardEvents = () => {
                 const dateStr = getLocalISODate(dashboardDate);
-                // Only show events for users currently in the family
                 const validMemberNames = family.members.map(m => m.name);
                 
                 return events.filter(e => 
@@ -320,32 +452,25 @@
             const getEventsForSelectedDay = useMemo(() => {
                 if (!currentUser) return [];
                 const dateStr = getLocalISODate(currentCalendarDate);
-                // Only show events owned by the current user for their personal calendar view
                 return events.filter(e => e.owner === currentUser.name && getLocalISODate(new Date(e.date)) === dateStr)
                              .sort((a,b) => new Date(a.date) - new Date(b.date));
             }, [events, currentUser, currentCalendarDate]);
 
 
-            // **FIX IMPLEMENTED HERE**
             const handleSaveEvent = () => {
                 if (!currentUser) return alert("Please select a user first."); 
                 if (!inputTitle || !eventTime) {
                     return alert("Please enter both a title and a time.");
                 }
 
-                const datePart = currentCalendarDate.toISOString().substring(0, 10); // YYYY-MM-DD
+                const datePart = currentCalendarDate.toISOString().substring(0, 10); 
                 
-                // **FIX:** We need to use local time parsing to avoid time zone shift.
-                // We concatenate date and time, and let the Date constructor resolve it locally.
                 const localDateTimeString = `${datePart} ${eventTime}`;
                 const eventDateObject = new Date(localDateTimeString);
-
-                // Now convert this local Date object to an ISO string for storage.
-                // The key is that the Date object creation respected the local time zone.
                 const dateTimeISO = eventDateObject.toISOString();
 
                 const newEvent = {
-                    id: Date.now(), // Simple unique ID
+                    id: Date.now(), 
                     title: inputTitle,
                     date: dateTimeISO,
                     owner: currentUser.name 
@@ -355,14 +480,14 @@
                 setInputTitle('');
             }
             
-            // --- VOICE INPUT (CALENDAR) ---
-            const handleVoiceInput = () => {
+            // --- VOICE INPUT (COMMON) ---
+            const handleVoiceInput = (setter) => {
                 if (!window.webkitSpeechRecognition) {
                     return alert("Voice input requires a browser that supports Webkit Speech Recognition (like Chrome).");
                 }
                 
                 if (isListening) {
-                    window.speechSynthesis.cancel(); // Stop any current speech
+                    window.speechSynthesis.cancel(); 
                     setIsListening(false);
                     return;
                 }
@@ -370,33 +495,62 @@
                 const recognition = new window.webkitSpeechRecognition();
                 recognition.interimResults = false;
                 recognition.lang = 'en-US';
-                recognition.continuous = false; // Only get one result per tap
+                recognition.continuous = false; 
 
                 recognition.onstart = () => {
                     setIsListening(true);
-                    setInputTitle("... Listening ...");
+                    if(setter === setInputTitle) setInputTitle("... Listening ...");
+                    if(setter === setNoteText) setNoteText(prev => prev + '... Listening ...');
                 };
 
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
-                    setInputTitle(transcript);
+                    if(setter === setInputTitle) {
+                        setInputTitle(transcript);
+                    } else if (setter === setNoteText) {
+                        setNoteText(prev => prev.replace('... Listening ...', '').trim() + ' ' + transcript);
+                    }
                 };
 
                 recognition.onerror = (event) => {
                     console.error('Speech recognition error:', event.error);
-                    setInputTitle(prev => prev === "... Listening ..." ? "" : prev); // Clear if no result
+                    if(setter === setInputTitle) setInputTitle(prev => prev === "... Listening ..." ? "" : prev);
+                    if(setter === setNoteText) setNoteText(prev => prev.replace('... Listening ...', '').trim());
                     alert("Voice input failed. Try again.");
                     setIsListening(false);
                 };
 
                 recognition.onend = () => {
+                    if(setter === setInputTitle) setInputTitle(prev => prev === "... Listening ..." ? "" : prev);
+                    if(setter === setNoteText) setNoteText(prev => prev.replace('... Listening ...', '').trim());
                     setIsListening(false);
                 };
 
                 recognition.start();
             };
             
-            const [isListening, setIsListening] = useState(false);
+            // --- NOTES LOGIC ---
+            const handleSaveNote = () => {
+                if (!currentUser || !noteText.trim()) return alert("Note is empty or no user selected.");
+                
+                const newNote = {
+                    id: Date.now(),
+                    type: 'text',
+                    content: noteText.trim(),
+                    owner: currentUser.name,
+                    timestamp: new Date().toISOString()
+                };
+
+                setSavedNotes(prev => [newNote, ...prev]);
+                setNoteText('');
+                alert("Note Saved!");
+            }
+            
+            const getSavedNotesForUser = useMemo(() => {
+                if (!currentUser) return [];
+                return savedNotes.filter(n => n.owner === currentUser.name)
+                                 .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            }, [savedNotes, currentUser]);
 
 
             // The daily content for the Home tab is based on the current user's preference
@@ -415,7 +569,6 @@
                     return inspo || allContent[0];
                 }
                 
-                // For 'both' or fallback, use the standard daily rotation
                 return allContent[0];
             }, [currentUser]);
 
@@ -460,7 +613,6 @@
                                 const n = document.getElementById('famName').value || "Ebot";
                                 if(family.members.length===0) return alert("Add at least 1 member");
                                 const finalFam = {...family, name: n};
-                                setFamily(finalFam);
                                 setCurrentUser(finalFam.members[0]);
                                 setView('license');
                             }} className={`w-full py-4 text-white font-bold rounded-2xl bg-blue-600 shadow-lg shadow-blue-500/20`}>Next Step</button>
@@ -480,8 +632,6 @@
                             <button 
                                 onClick={async () => {
                                     const licenseKey = document.getElementById('lic').value;
-                                    
-                                    // Placeholder for your future Firebase integration
                                     const isValid = licenseKey === 'FAMILY-1234'; 
                                     
                                     if (isValid) {
@@ -501,15 +651,15 @@
 
             // 3. MAIN APP
             return (
-                // Changed from fixed to allowing scroll outside of nav
                 <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-700`}> 
                     <audio ref={audioRef} src={MUSIC_URL} loop muted={!music} volume={music ? 0.5 : 0} />
 
                     {/* Main content area */}
                     <main className="flex-1 overflow-y-auto pb-28"> 
                         
+                        {/* --- HOME TAB --- */}
                         {tab === 'home' && (
-                            <div className="fade-in flex flex-col"> {/* Removed h-full */}
+                            <div className="fade-in flex flex-col"> 
                                 <div className="pt-6 px-6 pb-2">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
@@ -587,19 +737,19 @@
                                             )}
                                         </div>
                                     </div>
-                                    <div className="h-4"></div> {/* Add some space below the card */}
+                                    <div className="h-4"></div> 
                                 </div>
                             </div>
                         )}
 
+                        {/* --- CALENDAR TAB --- */}
                         {tab === 'calendar' && (
                             <div className="pt-10 px-6 fade-in h-full">
                                 <h2 className="text-3xl font-bold mb-6">Plan Calendar</h2>
 
-                                {/* ------------------------- CALENDAR GRID VIEW ------------------------- */}
+                                {/* CALENDAR GRID VIEW */}
                                 {calendarView === 'grid' && (
                                     <div className="glass rounded-[2rem] p-4 slide-up">
-                                        {/* Month Navigation */}
                                         <div className="flex justify-between items-center mb-4">
                                             <button onClick={()=>changeCalendarMonth(-1)} className="text-xl font-bold p-1 text-white/50 hover:text-white transition">
                                                 &lt;
@@ -612,7 +762,6 @@
                                             </button>
                                         </div>
 
-                                        {/* Calendar Grid */}
                                         <div className="calendar-grid text-center text-xs font-bold uppercase mb-2">
                                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                                                 <div key={d} className="text-white/50">{d}</div>
@@ -621,7 +770,7 @@
                                         <div className="calendar-grid">
                                             {(() => {
                                                 const daysInMonth = getDaysInMonth(currentMonth.getFullYear(), currentMonth.getMonth());
-                                                const firstDay = daysInMonth[0].getDay(); // 0 for Sunday, 6 for Saturday
+                                                const firstDay = daysInMonth[0].getDay(); 
                                                 const todayStr = getLocalISODate(new Date()); 
                                                 
                                                 const blanks = Array(firstDay).fill(null);
@@ -631,7 +780,6 @@
 
                                                     const dayStr = getLocalISODate(day); 
                                                     const isToday = dayStr === todayStr;
-                                                    // Only show dots for current user's events
                                                     const dayEvents = events.filter(e => e.owner === currentUser?.name && getLocalISODate(new Date(e.date)) === dayStr); 
 
                                                     return (
@@ -658,7 +806,7 @@
                                     </div>
                                 )}
                                 
-                                {/* ------------------------- DAY DETAIL / EVENT ENTRY VIEW ------------------------- */}
+                                {/* DAY DETAIL / EVENT ENTRY VIEW */}
                                 {calendarView === 'dayDetail' && (
                                     <div className="glass rounded-[2rem] p-6 slide-up min-h-full">
                                         <div className="flex justify-between items-center mb-4">
@@ -670,7 +818,6 @@
                                             </h3>
                                         </div>
 
-                                        {/* Daily Content */}
                                         <div className="p-3 rounded-xl bg-white/5 mb-4 text-center">
                                             <p className="font-verse text-xl italic text-white/80"> 
                                                 "{getDailyContent(currentCalendarDate).text}"
@@ -697,10 +844,10 @@
                                                 disabled={isListening}
                                             />
                                             <button 
-                                                onClick={handleVoiceInput} 
-                                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isListening ? 'bg-red-500/50' : 'bg-white/10 hover:bg-white/20'}`}
+                                                onClick={()=>handleVoiceInput(setInputTitle)} 
+                                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isListening && inputTitle.includes('Listening') ? 'bg-red-500/50' : 'bg-white/10 hover:bg-white/20'}`}
                                             >
-                                                <Icon name="Mic" active={!isListening} />
+                                                <Icon name="Mic" active={!(isListening && inputTitle.includes('Listening'))} />
                                             </button>
                                         </div>
                                         <button 
@@ -730,8 +877,9 @@
                             </div>
                         )}
                         
+                        {/* --- NOTES TAB (WITH FIXED DRAW PAD) --- */}
                         {tab === 'notes' && (
-                            <div className="pt-10 px-6 fade-in h-full">
+                            <div className="pt-10 px-6 fade-in">
                                 <h2 className="text-3xl font-bold mb-6">Creative Studio</h2>
                                 
                                 <div className="glass p-1 rounded-xl flex mb-6">
@@ -739,25 +887,57 @@
                                     <button onClick={()=>setNoteMode('draw')} className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase transition ${noteMode==='draw'?'bg-white/20 text-white':'text-white/40'}`}>Draw Pad</button>
                                 </div>
 
+                                {/* Text/Voice Note Area */}
                                 {noteMode === 'type' ? (
-                                    <div className="glass rounded-[2rem] p-6">
+                                    <div className="glass rounded-[2rem] p-6 slide-up">
                                         <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} className="w-full h-32 bg-transparent text-white placeholder-white/30 outline-none resize-none mb-4" placeholder={`Type a note for ${currentUser.name}...`}></textarea>
                                         <div className="flex justify-between items-center">
-                                            <button onClick={()=>{
-                                                if(!window.webkitSpeechRecognition) return alert("Use Chrome");
-                                                const r = new window.webkitSpeechRecognition();
-                                                r.onresult = e => setNoteText(prev => prev + ' ' + e.results[0][0].transcript);
-                                                r.start();
-                                            }} className="p-2 rounded-full bg-white/10"><Icon name="Mic" active={true}/></button>
-                                            <button className={`px-4 py-2 rounded-lg font-bold text-xs ${currentTheme.accent}`} onClick={()=>alert("Saved!")}>Save Note</button>
+                                            <button onClick={()=>handleVoiceInput(setNoteText)} className={`p-3 rounded-full transition-all ${isListening && noteText.includes('Listening') ? 'bg-red-500/50' : 'bg-white/10 hover:bg-white/20'}`}>
+                                                <Icon name="Mic" active={!(isListening && noteText.includes('Listening'))}/>
+                                            </button>
+                                            <button className={`px-4 py-2 rounded-lg font-bold text-xs ${currentTheme.accent} hover:opacity-80 transition`} onClick={handleSaveNote}>Save Note</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <DrawPad onSave={()=>alert("Masterpiece Saved!")} />
+                                    // Draw Pad Area (Uses functional component)
+                                    <DrawPad onSaveDrawing={setSavedNotes} currentUser={currentUser} />
                                 )}
+
+                                {/* Saved Notes Section */}
+                                <div className="mt-8 mb-6">
+                                    <h4 className="text-white/50 text-sm font-bold uppercase mb-4 tracking-widest">SAVED NOTES ({currentUser.name})</h4>
+                                    
+                                    <div className="space-y-4">
+                                        {getSavedNotesForUser.length === 0 ? (
+                                            <p className="text-white/40 text-sm italic py-4 text-center">No saved notes or drawings yet.</p>
+                                        ) : (
+                                            getSavedNotesForUser.map(note => (
+                                                <div key={note.id} className="p-4 rounded-xl glass flex flex-col">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className="text-white/60 text-[10px] uppercase font-bold">
+                                                            {note.type === 'text' ? 'Text Note' : 'Drawing'} - {new Date(note.timestamp).toLocaleDateString()}
+                                                        </span>
+                                                        {note.type === 'text' && (
+                                                            <button onClick={() => readNoteAloud(note.content)} className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition">
+                                                                <Icon name="Play" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {note.type === 'text' ? (
+                                                        <p className="text-white text-sm whitespace-pre-wrap">{note.content}</p>
+                                                    ) : (
+                                                        <img src={note.content} alt="Saved Drawing" className="w-full rounded-lg border border-white/10 max-h-40 object-contain"/>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
+                        {/* --- SETTINGS TAB --- */}
                         {tab === 'settings' && (
                             <div className="pt-10 px-6 fade-in">
                                 <h2 className="text-3xl font-bold mb-2">Settings</h2>
@@ -785,7 +965,7 @@
                         )}
                     </main>
 
-                    {/* NAV BAR REMAINS UNCHANGED */}
+                    {/* NAV BAR */}
                     <div className="fixed bottom-0 w-full glass-nav px-2 pb-safe pt-2 z-50">
                         <div className="flex justify-between items-end">
                             {['home','calendar','notes','settings'].map(t => (
