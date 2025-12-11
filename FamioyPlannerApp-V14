@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Family Hub Platinum v14</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+    
+    <style>
+        /* LUXURY MOBILE STYLING */
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: none;
+            background-color: #020617; 
+            color: white;
+            transition: background 0.5s ease;
+        }
+        .font-verse { font-family: 'Playfair Display', serif; }
+        .font-hand { font-family: 'Patrick Hand', cursive; }
+        
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); transition: background 0.3s; }
+        .glass-nav { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .pb-safe { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+
+        /* Smooth Animations */
+        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+</head>
+<body class="fixed inset-0 overflow-hidden">
+
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        /* --- CONFIGURATION --- */
+        const THEMES = {
+            royal: { name: 'Royal', bg: 'bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950', accent: 'bg-blue-600' },
+            emerald: { name: 'Emerald', bg: 'bg-gradient-to-b from-slate-950 via-emerald-950 to-slate-950', accent: 'bg-emerald-600' },
+            amethyst: { name: 'Amethyst', bg: 'bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950', accent: 'bg-purple-600' },
+            sunset: { name: 'Sunset', bg: 'bg-gradient-to-b from-slate-950 via-orange-950 to-slate-950', accent: 'bg-orange-600' },
+            berry: { name: 'Berry', bg: 'bg-gradient-to-b from-pink-900 via-rose-700 to-pink-900', accent: 'bg-pink-500' },
+            aqua: { name: 'Aqua', bg: 'bg-gradient-to-b from-cyan-900 via-teal-700 to-cyan-900', accent: 'bg-cyan-400' },
+            gold: { name: 'Gold', bg: 'bg-gradient-to-b from-amber-900 via-yellow-700 to-amber-900', accent: 'bg-yellow-500' },
+            ruby: { name: 'Ruby', bg: 'bg-gradient-to-b from-red-950 via-red-800 to-red-950', accent: 'bg-red-600' },
+        };
+
+        const CONTENT_DB = {
+            verse: [
+                { text: "For God so loved the world that He gave His only begotten Son, that whosoever believeth in Him should not perish, but have everlasting life.", ref: "John 3:16", type: 'verse' },
+                { text: "Trust in the LORD with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5", type: 'verse' },
+                { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13", type: 'verse' }
+            ],
+            inspo: [
+                { text: "The only way to do great work is to love what you do.", ref: "Inspiration", type: 'inspo' },
+                { text: "Believe you can and you're halfway there.", ref: "Motivation", type: 'inspo' },
+                { text: "Act as if what you do makes a difference. It does.", ref: "Focus", type: 'inspo' }
+            ]
+        };
+
+        const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112762.mp3";
+
+        /* --- ICONS --- */
+        const Icon = ({ name, active }) => {
+            const size = 22; 
+            const style = { width: size, height: size };
+            const color = active ? "text-white" : "text-white/40";
+            
+            if(name==='Home') return <svg style={style} className={color} fill={active?"currentColor":"none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>;
+            if(name==='Calendar') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+            if(name==='Notes') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+            if(name==='Settings') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l-.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
+            if(name==='Music') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+            if(name==='MusicOff') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3.19"/><circle cx="6" cy="18" r="3"/><path d="M9 18v-2"/></svg>;
+            if(name==='Play') return <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
+            if(name==='Pause') return <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>;
+            if(name==='Mic') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
+            if(name==='Draw') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>;
+            return null;
+        };
+
+        /* --- AVATAR (EMOJIS) --- */
+        const Avatar = ({ type }) => {
+            // Emojis for Dad, Mom, Boy, Girl
+            const size = "text-3xl filter drop-shadow-md";
+            if(type==='dad') return <span className={size}>👨</span>;
+            if(type==='mom') return <span className={size}>👩</span>;
+            if(type==='boy') return <span className={size}>👦</span>;
+            if(type==='girl') return <span className={size}>👧</span>;
+            return <span className={size}>🙂</span>;
+        };
+        
+        /* --- UTILS --- */
+        const dateToYMD = (date) => date.toISOString().split('T')[0];
+        const dateToDisplay = (date) => {
+            const d = new Date(date);
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            const dStr = dateToYMD(d);
+            
+            if (dStr === dateToYMD(today)) return 'TODAY';
+            if (dStr === dateToYMD(tomorrow)) return 'TOMORROW';
+            if (dStr === dateToYMD(yesterday)) return 'YESTERDAY';
+            
+            return d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+        };
+
+        /* --- DRAW PAD COMPONENT --- */
+        function DrawPad({ theme, onSave }) {
+            const cvsRef = useRef(null);
+            const [color, setColor] = useState('#F43F5E');
+            const [size, setSize] = useState(5);
+
+            useEffect(() => {
+                const c = cvsRef.current;
+                c.width = c.parentElement.offsetWidth;
+                c.height = 350;
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0,0,c.width,c.height);
+                ctx.lineCap = 'round';
+            }, []);
+
+            const draw = (e) => {
+                if(e.buttons !== 1 && e.type !== 'touchmove') return;
+                const c = cvsRef.current;
+                const ctx = c.getContext('2d');
+                const r = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+                
+                ctx.lineWidth = size;
+                ctx.strokeStyle = color;
+                if(e.type === 'mousedown' || e.type === 'touchstart') {
+                    ctx.beginPath();
+                    ctx.moveTo(x,y);
+                } else {
+                    ctx.lineTo(x,y);
+                    ctx.stroke();
+                }
+            };
+            return (
+                <div className="flex flex-col h-full gap-4">
+                    <div className="glass p-3 rounded-2xl flex justify-between items-center">
+                        <input type="color" value={color} onChange={e=>setColor(e.target.value)} className="h-8 w-8 rounded-full border-none"/>
+                        <input type="range" min="2" max="20" value={size} onChange={e=>setSize(e.target.value)} className="w-32 accent-white"/>
+                        <button onClick={onSave} className="text-xs text-white px-3 py-1 rounded-lg font-bold bg-white/20">SAVE</button>
+                    </div>
+                    <canvas ref={cvsRef} className="bg-white rounded-2xl w-full touch-none shadow-xl"
+                        onMouseDown={draw} onMouseMove={draw} onTouchStart={draw} onTouchMove={draw} />
+                </div>
+            );
+        }
+
+        /* --- MAIN APP --- */
+        function App() {
+            // GLOBAL STATE
+            const [view, setView] = useState('auth');
+            const [tab, setTab] = useState('home');
+            const [music, setMusic] = useState(true);
+            const [isPlayingVerse, setIsPlayingVerse] = useState(false);
+            
+            // DATA STATE
+            const [family, setFamily] = useState({ name: '', members: [] });
+            const [currentUser, setCurrentUser] = useState(null); 
+            const [events, setEvents] = useState([]);
+            
+            // UI STATE
+            const [dashboardDate, setDashboardDate] = useState(new Date()); // Controls the dashboard view date
+
+            // AUTH INPUTS
+            const [newMemName, setNewMemName] = useState('');
+            const [newMemRole, setNewMemRole] = useState('dad');
+
+            // CALENDAR INPUTS
+            const [showCalModal, setShowCalModal] = useState(false);
+            const [inputTitle, setInputTitle] = useState('');
+
+            // NOTES INPUTS
+            const [noteMode, setNoteMode] = useState('type'); // type | draw
+            const [noteText, setNoteText] = useState('');
+
+            const audioRef = useRef(null);
+
+            // Derive Theme & Settings from Current User
+            const currentTheme = currentUser?.theme ? THEMES[currentUser.theme] : THEMES.royal;
+            const currentPref = currentUser?.pref || 'both';
+
+            // --- AUDIO ENGINE ---
+            useEffect(() => {
+                if(audioRef.current) {
+                    // Attempt to start playback, needed for the music fix
+                    const playPromise = audioRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            // Autoplay was prevented. User needs to interact first.
+                            console.log("Autoplay prevented:", error);
+                        });
+                    }
+                    audioRef.current.volume = isPlayingVerse ? 0.1 : 0.5;
+                    audioRef.current.muted = !music;
+                }
+            }, [music, isPlayingVerse]);
+            
+            // --- Dashboard Navigation ---
+            const changeDashboardDate = (days) => {
+                setDashboardDate(prevDate => {
+                    const newDate = new Date(prevDate);
+                    newDate.setDate(newDate.getDate() + days);
+                    return newDate;
+                });
+            };
+
+            // --- GLOBAL VOICE ALARM (Checks ALL events) ---
+            useEffect(() => {
+                const i = setInterval(() => {
+                    const now = new Date();
+                    events.forEach(e => {
+                        const ed = new Date(e.date);
+                        // Check if exact minute matches and not yet announced
+                        if(ed.getDate()===now.getDate() && ed.getHours()===now.getHours() && ed.getMinutes()===now.getMinutes() && !e.announced) {
+                            
+                            // Mute BG music slightly
+                            if(audioRef.current) audioRef.current.volume = 0.2;
+                            
+                            // Voice alert reads out the full activity
+                            const u = new SpeechSynthesisUtterance(`Reminder for ${e.owner}. It is time for: ${e.title}`);
+                            u.onend = () => {
+                                // Restore BG music
+                                if(audioRef.current && music) audioRef.current.volume = 0.5;
+                            };
+                            window.speechSynthesis.speak(u);
+                            
+                            // Mark announced locally (NOTE: In a real app, this would be persisted)
+                            e.announced = true;
+                            setEvents(prev => [...prev.map(item => item.id === e.id ? e : item)]);
+                        }
+                    });
+                }, 10000); // Check every 10s
+                return () => clearInterval(i);
+            }, [events, music]);
+
+            // --- PERSONALIZATION HANDLERS ---
+            const handleSwitchUser = (member) => {
+                setCurrentUser(member);
+                setTab('home');
+            };
+
+            const handleUpdateTheme = (key) => {
+                const updatedMembers = family.members.map(m => m.name === currentUser.name ? { ...m, theme: key } : m);
+                setFamily({ ...family, members: updatedMembers });
+                setCurrentUser({ ...currentUser, theme: key }); 
+            };
+
+            const handleUpdatePref = (pref) => {
+                const updatedMembers = family.members.map(m => m.name === currentUser.name ? { ...m, pref: pref } : m);
+                setFamily({ ...family, members: updatedMembers });
+                setCurrentUser({ ...currentUser, pref: pref });
+            };
+
+            // --- CONTENT & FORMATTING ---
+            const getDashboardDateString = () => {
+                const d = dashboardDate;
+                const dStr = dateToDisplay(d).toUpperCase();
+                const nStr = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, ' ');
+                return `${dStr}, ${nStr}`;
+            };
+
+            const toggleVerse = (item) => {
+                if(isPlayingVerse) {
+                    window.speechSynthesis.cancel();
+                    setIsPlayingVerse(false);
+                } else {
+                    window.speechSynthesis.cancel();
+                    // Audio Logic specific to type
+                    let spokenText = item.text;
+                    if(item.type === 'inspo') {
+                        // The requested audio phrase is spoken after the inspirational message
+                        spokenText += ". Let this word motivate and guide you today.";
+                    } else {
+                        // Bible verse
+                        spokenText += ` ... ${item.ref.replace(':', ', verse ')}`;
+                    }
+                    
+                    const u = new SpeechSynthesisUtterance(spokenText);
+                    u.rate = 0.9; 
+                    u.onstart = () => {
+                        if(audioRef.current) audioRef.current.volume = 0.1;
+                    };
+                    u.onend = () => {
+                        if(audioRef.current && music) audioRef.current.volume = 0.5;
+                        setIsPlayingVerse(false);
+                    };
+                    window.speechSynthesis.speak(u);
+                    setIsPlayingVerse(true);
+                }
+            };
+
+            const getDailyContent = () => {
+                const date = new Date();
+                const pool = currentPref === 'verse' ? CONTENT_DB.verse : currentPref === 'inspo' ? CONTENT_DB.inspo : [...CONTENT_DB.verse, ...CONTENT_DB.inspo];
+                const item = pool[date.getDate() % pool.length];
+                return item;
+            };
+            const daily = getDailyContent();
+
+            // FILTER EVENTS FOR CURRENT DASHBOARD DATE (ALL USERS)
+            const getDashboardEvents = () => {
+                const targetDateStr = dateToYMD(dashboardDate);
+
+                return events.filter(e => {
+                    const eventDateStr = dateToYMD(new Date(e.date));
+                    return eventDateStr === targetDateStr;
+                }).sort((a,b) => new Date(a.date) - new Date(b.date));
+            };
+
+            /* --- VIEWS --- */
+
+            if(view === 'auth') return (
+                <div className={`h-full flex flex-col items-center justify-center p-8 bg-slate-950 text-white`}>
+                    <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm">
+                        <h1 className="text-3xl font-extrabold mb-2 text-center">Family Hub</h1>
+                        <p className="text-white/50 mb-8 text-sm text-center">Setup your family space</p>
+                        <input id="famName" placeholder="Family Name (e.g. Ebot)" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-center placeholder-white/30 mb-6 outline-none"/>
+                        
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-white/50 uppercase block mb-2">Select Role</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {['dad','mom','boy','girl'].map(r => (
+                                    <button key={r} onClick={()=>setNewMemRole(r)} className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all ${newMemRole===r ? 'bg-blue-600/30 border border-blue-400' : 'bg-white/5 border border-transparent'}`}>
+                                        <div className="w-8 h-8 flex items-center justify-center"><Avatar type={r}/></div>
+                                        <span className="text-[9px] uppercase font-bold text-white/70">{r}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 mb-6">
+                            <input value={newMemName} onChange={e=>setNewMemName(e.target.value)} placeholder="Member Name" className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none"/>
+                            <button onClick={()=>{
+                                if(newMemName && family.members.length < 6) {
+                                    setFamily({...family, members: [...family.members, {name: newMemName, role: newMemRole, theme: 'royal', pref: 'both'}]});
+                                    setNewMemName('');
+                                }
+                            }} className="bg-white/10 border border-white/20 p-3 rounded-xl font-bold text-xl hover:bg-white/20 transition">+</button>
+                        </div>
+
+                        <div className="flex gap-2 justify-center mb-8 flex-wrap min-h-[30px]">
+                            {family.members.map((m,i)=><div key={i} className="text-xs bg-white/20 px-3 py-1 rounded-full font-bold">{m.name}</div>)}
+                        </div>
+
+                        <button onClick={()=>{
+                            const n = document.getElementById('famName').value || "Ebot";
+                            if(family.members.length===0) return alert("Add at least 1 member");
+                            const finalFam = {...family, name: n};
+                            setFamily(finalFam);
+                            setCurrentUser(finalFam.members[0]);
+                            setView('license');
+                        }} className={`w-full py-4 text-white font-bold rounded-2xl bg-blue-600 shadow-lg shadow-blue-500/20`}>Next Step</button>
+                    </div>
+                </div>
+            );
+
+            if(view === 'license') return (
+                <div className={`h-full flex items-center justify-center p-8 bg-black`}>
+                    <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm text-center">
+                        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+                        <h2 className="text-xl font-bold text-white mb-2">Security Check</h2>
+                        <p className="text-white/40 text-xs mb-6">Key: FAMILY-1234</p>
+                        <input id="lic" placeholder="XXXX-XXXX" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-center text-white tracking-widest uppercase mb-6 outline-none"/>
+                        <button onClick={()=>document.getElementById('lic').value==='FAMILY-1234'?setView('app'):alert('Invalid')} className="w-full py-4 bg-white text-black font-bold rounded-2xl">Unlock</button>
+                    </div>
+                </div>
+            );
+
+            // 3. MAIN APP
+            return (
+                <div className={`h-full flex flex-col ${currentTheme.bg} transition-colors duration-700`}>
+                    <audio ref={audioRef} src={MUSIC_URL} loop muted={!music} volume={music ? 0.5 : 0} />
+
+                    <main className="flex-1 overflow-y-auto pb-28">
+                        
+                        {tab === 'home' && (
+                            <div className="fade-in flex flex-col h-full">
+                                {/* HEADER */}
+                                <div className="pt-6 px-6 pb-2">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            {/* GREETING CHANGE IMPLEMENTED HERE */}
+                                            <h1 className="text-2xl font-extrabold text-white">Welcome The {family.name}s</h1>
+                                            <p className="text-xs font-bold text-white/60 uppercase tracking-[0.1em] mt-1">{currentUser.name}'s Space</p>
+                                        </div>
+                                        <button onClick={()=>setMusic(!music)} className={`p-3 rounded-full glass transition ${music?'text-emerald-400':'text-white/30'}`}>
+                                            <Icon name={music?'Music':'MusicOff'} active={music}/>
+                                        </button>
+                                    </div>
+
+                                    {/* USER SWITCHER */}
+                                    <div className="flex gap-4 overflow-x-auto hide-scroll pb-2 mb-2 px-1">
+                                        {family.members.map((m,i) => (
+                                            <button key={i} onClick={()=>handleSwitchUser(m)} className="flex flex-col items-center gap-1 min-w-[60px] group">
+                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${currentUser.name===m.name ? 'bg-white scale-110 shadow-lg' : 'glass group-hover:bg-white/20'}`}>
+                                                    <div className="w-10 h-10 flex items-center justify-center"><Avatar type={m.role} /></div>
+                                                </div>
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest ${currentUser.name===m.name ? 'text-white' : 'text-white/50'}`}>{m.name.substring(0,6)}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* GLASS DIVIDER (Moved Up) */}
+                                <div className="mx-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-1"></div>
+
+                                {/* DAILY CONTENT (Centralized & Large) */}
+                                <div className="px-6 py-4 text-center flex-shrink-0">
+                                    <p className="font-verse text-2xl text-white leading-relaxed drop-shadow-md italic mb-2">
+                                        "{daily.text}"
+                                    </p>
+                                    
+                                    {/* Play Button moved up closer to text */}
+                                    <div className="flex flex-col items-center justify-center gap-2 mt-1">
+                                        <button onClick={()=>toggleVerse(daily)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center backdrop-blur-md transition">
+                                            <Icon name={isPlayingVerse ? 'Pause' : 'Play'} />
+                                        </button>
+                                        {/* Sentence Case Implemented */}
+                                        <span className="font-bold text-xs text-white/60 tracking-wider">
+                                            {daily.type === 'inspo' ? "Let this word motivate and guide you today." : daily.ref}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* DASHBOARD (Visible without scrolling) */}
+                                <div className="px-6 mt-2 flex-1">
+                                    <div className="glass rounded-[2rem] overflow-hidden p-6 h-full flex flex-col">
+                                        
+                                        {/* DASHBOARD HEADER WITH NAVIGATION */}
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-3">
+                                            <button onClick={()=>changeDashboardDate(-1)} className="text-xl font-bold p-1 text-white/50 hover:text-white transition">
+                                                &lt;
+                                            </button>
+                                            <div className="flex flex-col items-center">
+                                                <h2 className="text-xl font-extrabold tracking-widest text-white">FAMILY DASHBOARD</h2>
+                                                <span className="text-[10px] text-white/50 font-bold uppercase tracking-widest mt-1">{getDashboardDateString()}</span>
+                                            </div>
+                                            <button onClick={()=>changeDashboardDate(1)} className="text-xl font-bold p-1 text-white/50 hover:text-white transition">
+                                                &gt;
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="space-y-1 overflow-y-auto">
+                                            {getDashboardEvents().length === 0 ? (
+                                                <div className="py-6 text-center text-white/40 text-sm italic">No activity for this day.</div>
+                                            ) : (
+                                                getDashboardEvents().map(e => (
+                                                    <div key={e.id} className="p-3 rounded-xl bg-white/5 flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                                                            <div className="text-lg"><Avatar type={family.members.find(m => m.name === e.owner)?.role || 'dad'} /></div>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-bold text-white text-sm">{e.title}</span>
+                                                                <span className="font-mono text-white/60 text-xs bg-black/20 px-2 py-1 rounded">{new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                                                            </div>
+                                                            <span className="text-[9px] text-white/40 uppercase tracking-wider">{e.owner}</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'calendar' && (
+                            <div className="pt-10 px-6 fade-in">
+                                <h2 className="text-3xl font-bold mb-6">Plan</h2>
+                                <button onClick={()=>setShowCalModal(true)} className={`w-full py-4 font-bold rounded-2xl ${currentTheme.accent} text-white shadow-lg mb-6`}>+ Add Event</button>
+                                <div className="glass rounded-[2rem] p-6 min-h-[50vh]">
+                                    <h3 className="text-white/50 text-xs font-bold uppercase mb-4">Upcoming for {currentUser.name}</h3>
+                                    {events.sort((a,b) => new Date(a.date) - new Date(b.date)).map(e => (
+                                        <div key={e.id} className="py-3 border-b border-white/10 flex justify-between">
+                                            <span>{e.title}</span>
+                                            <span className="text-white/50 text-sm">{new Date(e.date).toLocaleDateString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {tab === 'notes' && (
+                            <div className="pt-10 px-6 fade-in h-full">
+                                <h2 className="text-3xl font-bold mb-6">Creative Studio</h2>
+                                
+                                <div className="glass p-1 rounded-xl flex mb-6">
+                                    <button onClick={()=>setNoteMode('type')} className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase transition ${noteMode==='type'?'bg-white/20 text-white':'text-white/40'}`}>Type & Voice</button>
+                                    <button onClick={()=>setNoteMode('draw')} className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase transition ${noteMode==='draw'?'bg-white/20 text-white':'text-white/40'}`}>Draw Pad</button>
+                                </div>
+
+                                {noteMode === 'type' ? (
+                                    <div className="glass rounded-[2rem] p-6">
+                                        <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} className="w-full h-32 bg-transparent text-white placeholder-white/30 outline-none resize-none mb-4" placeholder={`Type a note for ${currentUser.name}...`}></textarea>
+                                        <div className="flex justify-between items-center">
+                                            <button onClick={()=>{
+                                                if(!window.webkitSpeechRecognition) return alert("Use Chrome");
+                                                const r = new window.webkitSpeechRecognition();
+                                                r.onresult = e => setNoteText(prev => prev + ' ' + e.results[0][0].transcript);
+                                                r.start();
+                                            }} className="p-2 rounded-full bg-white/10"><Icon name="Mic" active={true}/></button>
+                                            <button className={`px-4 py-2 rounded-lg font-bold text-xs ${currentTheme.accent}`} onClick={()=>alert("Saved!")}>Save Note</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <DrawPad onSave={()=>alert("Masterpiece Saved!")} />
+                                )}
+                            </div>
+                        )}
+
+                        {tab === 'settings' && (
+                            <div className="pt-10 px-6 fade-in">
+                                <h2 className="text-3xl font-bold mb-2">Settings</h2>
+                                <p className="text-sm text-white/50 mb-8">Personalize {currentUser.name}'s Experience</p>
+                                
+                                <div className="space-y-8">
+                                    <div>
+                                        <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Color Theme</h3>
+                                        <div className="grid grid-cols-4 gap-3">
+                                            {Object.entries(THEMES).map(([k, t]) => (
+                                                <button key={k} onClick={()=>handleUpdateTheme(k)} className={`w-14 h-14 rounded-2xl ${t.bg} border-2 shadow-lg ${currentUser.theme===k?'border-white scale-110':'border-transparent opacity-60'}`}></button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white/50 text-xs font-bold uppercase mb-3">Content Preference</h3>
+                                        <div className="glass p-1 rounded-xl flex">
+                                            {['verse','inspo','both'].map(p => (
+                                                <button key={p} onClick={()=>handleUpdatePref(p)} className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase transition ${currentUser.pref===p?'bg-white/20 text-white':'text-white/40'}`}>{p}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* NAV BAR */}
+                    <div className="fixed bottom-0 w-full glass-nav px-2 pb-safe pt-2 z-50">
+                        <div className="flex justify-between items-end">
+                            {['home','calendar','notes','settings'].map(t => (
+                                <button key={t} onClick={()=>setTab(t)} className="flex flex-col items-center p-3 w-1/4 group">
+                                    <div className={`transition-transform duration-300 ${tab===t ? '-translate-y-1' : ''}`}>
+                                        <Icon name={t.charAt(0).toUpperCase() + t.slice(1)} active={tab===t} />
+                                    </div>
+                                    <span className={`text-[9px] font-bold mt-1 transition-colors ${tab===t?'text-white':'text-white/20'}`}>{t.toUpperCase()}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* EVENT MODAL */}
+                    {showCalModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-[#0f172a] border border-white/20 w-full max-w-sm rounded-[2rem] p-6 slide-up">
+                                <h3 className="text-xl font-bold mb-4">Add Event for {currentUser.name}</h3>
+                                <input value={inputTitle} onChange={e=>setInputTitle(e.target.value)} placeholder="Event Title" className="w-full bg-white/10 p-4 rounded-xl text-white mb-4 outline-none"/>
+                                <div className="flex justify-end gap-3">
+                                    <button onClick={()=>setShowCalModal(false)} className="px-6 py-3 rounded-xl font-bold text-white/50">Cancel</button>
+                                    <button onClick={()=>{
+                                        if(inputTitle) {
+                                            // Set a dummy time for the event to be today at the current time + 1 minute (for testing the alarm)
+                                            const now = new Date();
+                                            now.setMinutes(now.getMinutes() + 1); 
+
+                                            setEvents([...events, {id:Date.now(), title:inputTitle, date: now.toISOString(), owner: currentUser.name, announced: false}]);
+                                            setInputTitle('');
+                                            setShowCalModal(false);
+                                        }
+                                    }} className={`px-6 py-3 rounded-xl font-bold text-white ${currentTheme.accent}`}>Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
