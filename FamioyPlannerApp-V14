@@ -2,134 +2,110 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Hub Platinum v14</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Hub App</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
-    
     <style>
-        /* LUXURY MOBILE STYLING */
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-            overscroll-behavior-y: none;
-            background-color: #020617; 
-            color: white;
-            transition: background 0.5s ease;
-        }
-        .font-verse { font-family: 'Playfair Display', serif; }
-        .font-hand { font-family: 'Patrick Hand', cursive; }
-        
-        /* Glassmorphism */
-        .glass { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); transition: background 0.3s; }
-        .glass-nav { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .pb-safe { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+        /* Changed to a more legible cursive font and added shadow for contrast */
+        @import url('https://fonts.googleapis.com/css2?family=Sacramento&display=swap'); 
 
-        /* Smooth Animations */
-        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        /* Custom calendar styling */
+        body, #root {
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-nav {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+        }
+
+        .font-verse {
+            font-family: 'Sacramento', cursive; /* Updated Font */
+            font-weight: 400; /* Ensure it uses the available weight */
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Added for better contrast */
+        }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
+            gap: 4px;
+        }
+        
+        /* Utility to hide scrollbar while keeping functionality */
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Safe area padding for bottom navigation */
+        .pb-safe {
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
         }
     </style>
 </head>
-<body class="fixed inset-0 overflow-hidden">
-
-    <div id="root" class="h-full w-full"></div>
+<body>
+    <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
-        /* --- CONFIGURATION --- */
+        // --- MOCK DATA / UTILS ---
+
         const THEMES = {
-            royal: { name: 'Royal', bg: 'bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950', accent: 'bg-blue-600' },
-            emerald: { name: 'Emerald', bg: 'bg-gradient-to-b from-slate-950 via-emerald-950 to-slate-950', accent: 'bg-emerald-600' },
-            amethyst: { name: 'Amethyst', bg: 'bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950', accent: 'bg-purple-600' },
-            sunset: { name: 'Sunset', bg: 'bg-gradient-to-b from-slate-950 via-orange-950 to-slate-950', accent: 'bg-orange-600' },
-            berry: { name: 'Berry', bg: 'bg-gradient-to-b from-pink-900 via-rose-700 to-pink-900', accent: 'bg-pink-500' },
-            aqua: { name: 'Aqua', bg: 'bg-gradient-to-b from-cyan-900 via-teal-700 to-cyan-900', accent: 'bg-cyan-400' },
-            gold: { name: 'Gold', bg: 'bg-gradient-to-b from-amber-900 via-yellow-700 to-amber-900', accent: 'bg-yellow-500' },
-            ruby: { name: 'Ruby', bg: 'bg-gradient-to-b from-red-950 via-red-800 to-red-950', accent: 'bg-red-600' },
+            royal: { bg: 'bg-slate-900', accent: 'bg-blue-600' },
+            emerald: { bg: 'bg-emerald-900', accent: 'bg-emerald-600' },
+            sun: { bg: 'bg-yellow-900', accent: 'bg-yellow-600' },
+            ruby: { bg: 'bg-red-900', accent: 'bg-red-600' }
         };
 
-        const CONTENT_DB = {
-            verse: [
-                { text: "For God so loved the world that He gave His only begotten Son, that whosoever believeth in Him should not perish, but have everlasting life.", ref: "John 3:16", type: 'verse' },
-                { text: "Trust in the LORD with all your heart and lean not on your own understanding.", ref: "Proverbs 3:5", type: 'verse' },
-                { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13", type: 'verse' }
-            ],
-            inspo: [
-                { text: "The only way to do great work is to love what you do.", ref: "Inspiration", type: 'inspo' },
-                { text: "Believe you can and you're halfway there.", ref: "Motivation", type: 'inspo' },
-                { text: "Act as if what you do makes a difference. It does.", ref: "Focus", type: 'inspo' }
-            ]
-        };
+        const MOCK_EVENTS = []; 
 
-        const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112762.mp3";
-
-        /* --- ICONS --- */
-        const Icon = ({ name, active }) => {
-            const size = 22; 
-            const style = { width: size, height: size };
-            const color = active ? "text-white" : "text-white/40";
-            
-            if(name==='Home') return <svg style={style} className={color} fill={active?"currentColor":"none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>;
-            if(name==='Calendar') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-            if(name==='Notes') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-            if(name==='Settings') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l-.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
-            if(name==='Music') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
-            if(name==='MusicOff') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3.19"/><circle cx="6" cy="18" r="3"/><path d="M9 18v-2"/></svg>;
-            if(name==='Play') return <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>;
-            if(name==='Pause') return <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>;
-            if(name==='Mic') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
-            if(name==='Draw') return <svg style={style} className={color} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>;
-            if(name==='Back') return <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>;
-            return null;
-        };
-
-        /* --- AVATAR (EMOJIS) --- */
-        const Avatar = ({ type }) => {
-            // Emojis for Dad, Mom, Boy, Girl
-            const size = "text-3xl filter drop-shadow-md";
-            if(type==='dad') return <span className={size}>👨</span>;
-            if(type==='mom') return <span className={size}>👩</span>;
-            if(type==='boy') return <span className={size}>👦</span>;
-            if(type==='girl') return <span className={size}>👧</span>;
-            return <span className={size}>🙂</span>;
-        };
+        const MOCK_CONTENT = [
+            { type: 'verse', text: "Do everything in love, with a heart of charity and kindness towards all others.", ref: "1 Corinthians 16:14" },
+            { type: 'inspo', text: "Your family is your team. Work together, love each other, and always strive to build a peaceful home.", ref: "Inspiration for today" },
+            { type: 'verse', text: "A sweet friendship refreshes the soul and gives it new strength, just as the aroma of incense makes the heart cheerful.", ref: "Proverbs 27:9" },
+            { type: 'inspo', text: "The most important work you will ever do will be within the walls of your own home. Invest in your loved ones daily.", ref: "Daily Guide" },
+            { type: 'verse', text: "For God so loved the world that he gave His only begotten Son, that whoever believes in Him should not perish but have everlasting life.", ref: "John 3:16" },
+        ];
         
-        /* --- UTILS --- */
-        const dateToYMD = (date) => date.toISOString().split('T')[0];
-        const dateToDisplay = (date) => {
-            const d = new Date(date);
-            const today = new Date();
-            const tomorrow = new Date();
-            tomorrow.setDate(today.getDate() + 1);
-            const yesterday = new Date();
-            yesterday.setDate(today.getDate() - 1);
+        const MUSIC_URL = 'path/to/family_jingle.mp3'; // Placeholder for music file
 
-            const dStr = dateToYMD(d);
-            
-            if (dStr === dateToYMD(today)) return 'TODAY';
-            if (dStr === dateToYMD(tomorrow)) return 'TOMORROW';
-            if (dStr === dateToYMD(yesterday)) return 'YESTERDAY';
-            
-            return d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-        };
+        const getLocalISODate = (date) => date.toISOString().substring(0, 10);
         
-        // Helper function to get days in a month
+        // Helper to get all days in a specific month
         const getDaysInMonth = (year, month) => {
             const date = new Date(year, month, 1);
             const days = [];
@@ -140,315 +116,313 @@
             return days;
         };
 
-        // Helper function to format a date to 'YYYY-MM-DD' using LOCAL time (FIXED ALIGNMENT)
-        const getLocalISODate = (date) => {
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+        const getDailyContent = (date) => {
+            const dayIndex = date.getDate() % MOCK_CONTENT.length;
+            return MOCK_CONTENT[dayIndex];
         };
 
-        /* --- DRAW PAD COMPONENT --- */
-        function DrawPad({ theme, onSave }) {
-            const cvsRef = useRef(null);
-            const [color, setColor] = useState('#F43F5E');
-            const [size, setSize] = useState(5);
-
-            useEffect(() => {
-                const c = cvsRef.current;
-                c.width = c.parentElement.offsetWidth;
-                c.height = 350;
-                const ctx = c.getContext('2d');
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0,0,c.width,c.height);
-                ctx.lineCap = 'round';
-            }, []);
-
-            const draw = (e) => {
-                if(e.buttons !== 1 && e.type !== 'touchmove') return;
-                const c = cvsRef.current;
-                const ctx = c.getContext('2d');
-                const r = c.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-                
-                ctx.lineWidth = size;
-                ctx.strokeStyle = color;
-                if(e.type === 'mousedown' || e.type === 'touchstart') {
-                    ctx.beginPath();
-                    ctx.moveTo(x,y);
-                } else {
-                    ctx.lineTo(x,y);
-                    ctx.stroke();
-                }
+        // --- ICON Component (Simplified SVG Placeholder) ---
+        const Icon = ({ name, active }) => {
+            const color = active ? 'white' : 'white/20';
+            const size = '6'; // Tailwind size class (w-6 h-6)
+            
+            const icons = {
+                Home: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>,
+                Calendar: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>,
+                Notes: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>,
+                Settings: <svg className={`w-${size} h-${size} text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.245.54 3.125.105z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>,
+                Music: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55a4 4 0 102 3.45V7h4V3h-6zM10 19a2 2 0 11-4 0 2 2 0 014 0z"/></svg>,
+                MusicOff: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M4.27 3L3 4.27l9 9v.55a4 4 0 102 3.45V14.27l6.73 6.73L21 19.73 4.27 3zM10 19a2 2 0 11-4 0 2 2 0 014 0z"/></svg>,
+                Play: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18V6l12 6-12 6z"/></svg>,
+                Pause: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>,
+                Back: <svg className={`w-3 h-3 mr-1 text-${color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>,
+                Mic: <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-2c0 3.97-3.33 7.1-7.3 7.1S4.7 15.97 4.7 12H3c0 4.84 3.96 8.8 8.8 8.9V24h2.4v-3.1c4.84-.1 8.8-4.06 8.8-8.9h-1.7z"/></svg>
             };
+            
+            return icons[name] || <div className={`w-${size} h-${size} bg-red-500 rounded`}></div>; // Fallback
+        };
+
+        // --- AVATAR Component (Simplified) ---
+        const Avatar = ({ type }) => {
+            const icons = {
+                dad: <span className="text-3xl">👨🏻</span>,
+                mom: <span className="text-3xl">👩🏼</span>,
+                boy: <span className="text-3xl">👦🏽</span>,
+                girl: <span className="text-3xl">👧🏻</span>,
+                default: <span className="text-3xl">👤</span>
+            };
+            return icons[type] || icons.default;
+        };
+        
+        // --- DrawPad Component (MOCK) ---
+        const DrawPad = ({ onSave }) => {
+            const canvasRef = useRef(null);
+            
+            // This is a minimal mock for UI consistency. Actual drawing logic is complex.
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+            }, []);
+            
             return (
-                <div className="flex flex-col h-full gap-4">
-                    <div className="glass p-3 rounded-2xl flex justify-between items-center">
-                        <input type="color" value={color} onChange={e=>setColor(e.target.value)} className="h-8 w-8 rounded-full border-none"/>
-                        <input type="range" min="2" max="20" value={size} onChange={e=>setSize(e.target.value)} className="w-32 accent-white"/>
-                        <button onClick={onSave} className="text-xs text-white px-3 py-1 rounded-lg font-bold bg-white/20">SAVE</button>
+                <div className="glass rounded-[2rem] p-6">
+                    <canvas ref={canvasRef} width="300" height="200" className="w-full h-48 bg-white/5 rounded-xl border border-white/10 mb-4"></canvas>
+                    <div className="flex justify-between items-center">
+                        <button onClick={() => { /* clear canvas logic */ }} className="px-4 py-2 rounded-lg font-bold text-xs bg-red-600/50 text-white/70">Clear</button>
+                        <button className={`px-4 py-2 rounded-lg font-bold text-xs ${THEMES.royal.accent}`} onClick={onSave}>Save Drawing</button>
                     </div>
-                    <canvas ref={cvsRef} className="bg-white rounded-2xl w-full touch-none shadow-xl"
-                        onMouseDown={draw} onMouseMove={draw} onTouchStart={draw} onTouchMove={draw} />
                 </div>
-            );
+            )
         }
 
-        /* --- MAIN APP --- */
-        function App() {
-            // GLOBAL STATE
-            const [view, setView] = useState('auth');
-            const [tab, setTab] = useState('home');
-            const [music, setMusic] = useState(true);
-            const [isPlayingVerse, setIsPlayingVerse] = useState(false);
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            // Initial Auth State
+            const [view, setView] = useState('auth'); // 'auth', 'license', 'app'
+            const [tab, setTab] = useState('home'); // 'home', 'calendar', 'notes', 'settings'
             
-            // DATA STATE
+            // Family/User State
             const [family, setFamily] = useState({ name: '', members: [] });
-            const [currentUser, setCurrentUser] = useState(null); 
-            const [events, setEvents] = useState([]); 
+            const [currentUser, setCurrentUser] = useState(null);
+            const currentTheme = currentUser ? THEMES[currentUser.theme] : THEMES.royal;
             
-            // UI STATE
-            const [dashboardDate, setDashboardDate] = useState(new Date()); 
-            // NEW: Calendar State
-            const [currentMonth, setCurrentMonth] = useState(new Date()); 
-            const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date()); 
-            const [calendarView, setCalendarView] = useState('grid'); // 'grid' | 'dayDetail' 
-            const [eventTime, setEventTime] = useState(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }));
-            const [isListening, setIsListening] = useState(false);
-
-
-            // AUTH INPUTS
+            // Auth View State
             const [newMemName, setNewMemName] = useState('');
-            const [newMemRole, setNewMemRole] = useState('dad');
-
-            // CALENDAR INPUTS
+            const [newMemRole, setNewMemRole] = useState('dad'); // Default role
+            
+            // Calendar View State
+            const [events, setEvents] = useState(MOCK_EVENTS); 
+            const [calendarView, setCalendarView] = useState('grid'); // 'grid' (month), 'dayDetail'
+            const [currentMonth, setCurrentMonth] = useState(new Date());
+            const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+            const [dashboardDate, setDashboardDate] = useState(new Date());
+            const [eventTime, setEventTime] = useState(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}).substring(0,5));
             const [inputTitle, setInputTitle] = useState('');
-
-            // NOTES INPUTS
-            const [noteMode, setNoteMode] = useState('type'); // type | draw
+            
+            // Notes View State
+            const [noteMode, setNoteMode] = useState('type'); // 'type', 'draw'
             const [noteText, setNoteText] = useState('');
 
+            // Media/Audio State
             const audioRef = useRef(null);
+            const [music, setMusic] = useState(false);
+            const [isPlayingVerse, setIsPlayingVerse] = useState(false);
 
-            // Derive Theme & Settings from Current User
-            const currentTheme = currentUser?.theme ? THEMES[currentUser.theme] : THEMES.royal;
-            const currentPref = currentUser?.pref || 'both';
+            // --- EFFECTS ---
 
-            // --- AUDIO ENGINE ---
+            // Handle music play/pause
             useEffect(() => {
-                if(audioRef.current) {
-                    const playPromise = audioRef.current.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Autoplay prevented:", error);
-                        });
+                if (audioRef.current) {
+                    if (music) {
+                        audioRef.current.play();
+                    } else {
+                        audioRef.current.pause();
                     }
-                    audioRef.current.volume = isPlayingVerse ? 0.1 : 0.5;
-                    audioRef.current.muted = !music;
                 }
-            }, [music, isPlayingVerse]);
+            }, [music]);
             
-            // --- Dashboard Navigation ---
-            const changeDashboardDate = (days) => {
-                setDashboardDate(prevDate => {
-                    const newDate = new Date(prevDate);
-                    newDate.setDate(newDate.getDate() + days);
-                    return newDate;
-                });
-            };
-
-            // --- Calendar Navigation ---
-            const changeCalendarMonth = (months) => {
-                setCurrentMonth(prevDate => {
-                    const newDate = new Date(prevDate);
-                    newDate.setMonth(newDate.getMonth() + months);
-                    newDate.setDate(1); 
-                    return newDate;
-                });
-                setCalendarView('grid');
-            };
-
-
-            // --- GLOBAL VOICE ALARM (Checks ALL events) ---
-            useEffect(() => {
-                const i = setInterval(() => {
-                    const now = new Date();
-                    events.forEach(e => {
-                        // Create Date object using the stored ISO string
-                        const ed = new Date(e.date); 
-                        
-                        // Check if exact minute matches and not yet announced
-                        if(ed.getDate()===now.getDate() && ed.getHours()===now.getHours() && ed.getMinutes()===now.getMinutes() && !e.announced) {
-                            
-                            if(audioRef.current) audioRef.current.volume = 0.2;
-                            
-                            const u = new SpeechSynthesisUtterance(`Reminder for ${e.owner}. It is time for: ${e.title}`);
-                            u.onend = () => {
-                                if(audioRef.current && music) audioRef.current.volume = 0.5;
-                            };
-                            window.speechSynthesis.speak(u);
-                            
-                            // Mark event as announced (must create a new array/object for state update)
-                            setEvents(prev => prev.map(item => item.id === e.id ? { ...item, announced: true } : item));
-                        }
-                    });
-                }, 10000); 
-                return () => clearInterval(i);
-            }, [events, music]);
-
-            // --- PERSONALIZATION HANDLERS ---
-            const handleSwitchUser = (member) => {
-                setCurrentUser(member);
-                setTab('home');
-                setCalendarView('grid'); // Reset calendar view on user switch
-            };
-
-            const handleUpdateTheme = (key) => {
-                const updatedMembers = family.members.map(m => m.name === currentUser.name ? { ...m, theme: key } : m);
-                setFamily({ ...family, members: updatedMembers });
-                setCurrentUser({ ...currentUser, theme: key }); 
-            };
-
-            const handleUpdatePref = (pref) => {
-                const updatedMembers = family.members.map(m => m.name === currentUser.name ? { ...m, pref: pref } : m);
-                setFamily({ ...family, members: updatedMembers });
-                setCurrentUser({ ...currentUser, pref: pref });
-            };
-
-            // --- CONTENT & FORMATTING ---
-            const getDashboardDateString = () => {
-                const d = dashboardDate;
-                const dStr = dateToDisplay(d).toUpperCase();
-                const nStr = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, ' ');
-                return `${dStr}, ${nStr}`;
-            };
-
-            const toggleVerse = (item) => {
+            // Modified to include reference in speech
+            const toggleVerse = (content) => {
                 if(isPlayingVerse) {
                     window.speechSynthesis.cancel();
                     setIsPlayingVerse(false);
                 } else {
-                    window.speechSynthesis.cancel();
-                    let spokenText = item.text;
-                    if(item.type === 'inspo') {
-                        spokenText += ". Let this word motivate and guide you today.";
-                    } else {
-                        spokenText += ` ... ${item.ref.replace(':', ', verse ')}`;
-                    }
+                    // Create a spoken string including the text and the formatted reference
+                    const [bookChapter, verseNumber] = content.ref.split(':');
+                    const spokenReference = `${bookChapter.replace(/(\d+)/g, ' $1,')}, verse ${verseNumber}`;
+                    const spokenText = `${content.text}. ${spokenReference}`;
                     
-                    const u = new SpeechSynthesisUtterance(spokenText);
-                    u.rate = 0.9; 
-                    u.onstart = () => {
-                        if(audioRef.current) audioRef.current.volume = 0.1;
-                    };
-                    u.onend = () => {
-                        if(audioRef.current && music) audioRef.current.volume = 0.5;
-                        setIsPlayingVerse(false);
-                    };
-                    window.speechSynthesis.speak(u);
+                    const utterance = new SpeechSynthesisUtterance(spokenText);
+                    // Use a slightly slower rate for verse reading
+                    utterance.rate = 0.9; 
+                    utterance.onend = () => setIsPlayingVerse(false);
+                    window.speechSynthesis.speak(utterance);
                     setIsPlayingVerse(true);
                 }
             };
 
-            const getDailyContent = (date) => {
-                const dateSeed = date ? date.getDate() : new Date().getDate();
-                const pool = currentPref === 'verse' ? CONTENT_DB.verse : currentPref === 'inspo' ? CONTENT_DB.inspo : [...CONTENT_DB.verse, ...CONTENT_DB.inspo];
-                // Use dateSeed for a consistent verse/inspo per day
-                const item = pool[dateSeed % pool.length]; 
-                return item;
-            };
-            const dailyHomeContent = getDailyContent();
-
-            // FILTER EVENTS FOR CURRENT DASHBOARD DATE (ALL USERS)
-            const getDashboardEvents = () => {
-                const targetDateStr = getLocalISODate(dashboardDate); 
-
-                return events.filter(e => {
-                    const eventDateStr = getLocalISODate(new Date(e.date)); 
-                    return eventDateStr === targetDateStr;
-                }).sort((a,b) => new Date(a.date) - new Date(b.date));
-            };
+            // --- HANDLERS ---
             
-            // FILTER EVENTS FOR SELECTED CALENDAR DATE (CURRENT USER)
+            const handleSwitchUser = (member) => {
+                setCurrentUser(member);
+                // Reset to home tab if switching user
+                setTab('home'); 
+            }
+
+            const handleUpdateTheme = (themeKey) => {
+                const updatedMembers = family.members.map(m => 
+                    m.name === currentUser.name ? { ...m, theme: themeKey } : m
+                );
+                setFamily({...family, members: updatedMembers});
+                setCurrentUser({...currentUser, theme: themeKey});
+            }
+            
+            const handleUpdatePref = (pref) => {
+                const updatedMembers = family.members.map(m => 
+                    m.name === currentUser.name ? { ...m, pref: pref } : m
+                );
+                setFamily({...family, members: updatedMembers});
+                setCurrentUser({...currentUser, pref: pref});
+            }
+
+            // --- CALENDAR LOGIC ---
+
+            const changeCalendarMonth = (direction) => {
+                setCurrentMonth(prev => {
+                    const newMonth = new Date(prev.getFullYear(), prev.getMonth() + direction, 1);
+                    return newMonth;
+                });
+            }
+            
+            const changeDashboardDate = (direction) => {
+                setDashboardDate(prev => {
+                    const newDate = new Date(prev);
+                    newDate.setDate(newDate.getDate() + direction);
+                    return newDate;
+                });
+            }
+
+            const getDashboardDateString = () => {
+                const today = getLocalISODate(new Date());
+                const dashDay = getLocalISODate(dashboardDate);
+                
+                if (today === dashDay) return "TODAY'S ACTIVITY";
+                
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (getLocalISODate(yesterday) === dashDay) return "YESTERDAY'S ACTIVITY";
+                
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                if (getLocalISODate(tomorrow) === dashDay) return "TOMORROW'S ACTIVITY";
+
+                return dashboardDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+            }
+
+            const getDashboardEvents = () => {
+                const dateStr = getLocalISODate(dashboardDate);
+                // Only show events for users currently in the family
+                const validMemberNames = family.members.map(m => m.name);
+                
+                return events.filter(e => 
+                                 getLocalISODate(new Date(e.date)) === dateStr &&
+                                 validMemberNames.includes(e.owner)
+                               )
+                             .sort((a,b) => new Date(a.date) - new Date(b.date));
+            }
+            
             const getEventsForSelectedDay = useMemo(() => {
-                const targetDateStr = getLocalISODate(currentCalendarDate); 
-                return events
-                    .filter(e => e.owner === currentUser?.name && getLocalISODate(new Date(e.date)) === targetDateStr) 
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (!currentUser) return [];
+                const dateStr = getLocalISODate(currentCalendarDate);
+                // Only show events owned by the current user for their personal calendar view
+                return events.filter(e => e.owner === currentUser.name && getLocalISODate(new Date(e.date)) === dateStr)
+                             .sort((a,b) => new Date(a.date) - new Date(b.date));
             }, [events, currentUser, currentCalendarDate]);
 
-            // --- EVENT LOGIC ---
+
+            // **FIX IMPLEMENTED HERE**
             const handleSaveEvent = () => {
-                if (!inputTitle || !eventTime) return alert("Please enter a title and select a time.");
+                if (!currentUser) return alert("Please select a user first."); 
+                if (!inputTitle || !eventTime) {
+                    return alert("Please enter both a title and a time.");
+                }
 
-                // Combine selected date with selected time
-                const dateStr = getLocalISODate(currentCalendarDate);
-                const [hour, minute] = eventTime.split(':');
+                const datePart = currentCalendarDate.toISOString().substring(0, 10); // YYYY-MM-DD
                 
-                // Create a new Date object based on the currentCalendarDate's year/month/day (local time)
-                const eventDate = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), currentCalendarDate.getDate());
-                eventDate.setHours(parseInt(hour, 10));
-                eventDate.setMinutes(parseInt(minute, 10));
-                eventDate.setSeconds(0);
-                eventDate.setMilliseconds(0);
-                
-                // Add event
-                setEvents(prev => [...prev, {
-                    id: Date.now(),
+                // **FIX:** We need to use local time parsing to avoid time zone shift.
+                // We concatenate date and time, and let the Date constructor resolve it locally.
+                const localDateTimeString = `${datePart} ${eventTime}`;
+                const eventDateObject = new Date(localDateTimeString);
+
+                // Now convert this local Date object to an ISO string for storage.
+                // The key is that the Date object creation respected the local time zone.
+                const dateTimeISO = eventDateObject.toISOString();
+
+                const newEvent = {
+                    id: Date.now(), // Simple unique ID
                     title: inputTitle,
-                    date: eventDate.toISOString(), // Store as ISO string (UTC)
-                    owner: currentUser.name,
-                    announced: false,
-                }]);
-
-                setInputTitle(''); // Clear input
-                setEventTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }));
-                alert(`Event "${inputTitle}" saved for ${currentCalendarDate.toLocaleDateString()} at ${eventTime}!`);
-            };
-            
-            // --- VOICE INPUT LOGIC ---
-            const handleVoiceInput = () => {
-                if(!window.webkitSpeechRecognition) return alert("Voice input requires a Chromium-based browser (Chrome, Edge). If using a local file, it may require server/HTTPS.");
-                
-                const r = new window.webkitSpeechRecognition();
-                r.lang = 'en-US';
-                r.interimResults = false;
-                r.maxAlternatives = 1;
-                
-                r.onstart = () => {
-                    setIsListening(true);
-                    setInputTitle("... Listening (say event name) ...");
+                    date: dateTimeISO,
+                    owner: currentUser.name 
                 };
+
+                setEvents(prev => [...prev, newEvent]);
+                setInputTitle('');
+            }
+            
+            // --- VOICE INPUT (CALENDAR) ---
+            const handleVoiceInput = () => {
+                if (!window.webkitSpeechRecognition) {
+                    return alert("Voice input requires a browser that supports Webkit Speech Recognition (like Chrome).");
+                }
                 
-                r.onresult = e => {
-                    const transcript = e.results[0][0].transcript;
+                if (isListening) {
+                    window.speechSynthesis.cancel(); // Stop any current speech
+                    setIsListening(false);
+                    return;
+                }
+
+                const recognition = new window.webkitSpeechRecognition();
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                recognition.continuous = false; // Only get one result per tap
+
+                recognition.onstart = () => {
+                    setIsListening(true);
+                    setInputTitle("... Listening ...");
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
                     setInputTitle(transcript);
                 };
-                
-                r.onend = () => {
-                    // This will re-enable the input field
-                    setIsListening(false); 
-                    if (inputTitle.includes("... Listening")) {
-                        // Clear the temporary listening message if no transcription happened
-                        setInputTitle(''); 
-                    }
-                };
-                
-                r.onerror = e => {
-                    console.error('Speech recognition error:', e);
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    setInputTitle(prev => prev === "... Listening ..." ? "" : prev); // Clear if no result
+                    alert("Voice input failed. Try again.");
                     setIsListening(false);
-                    setInputTitle('');
-                    alert("Voice error. Ensure your microphone is enabled and permissions are granted to the browser/site. This often fails when running a local HTML file; try using a web server (HTTPS).");
                 };
-                
-                r.start();
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognition.start();
             };
+            
+            const [isListening, setIsListening] = useState(false);
 
-            /* --- VIEWS --- */
 
-            if(view === 'auth') {
-                /* ... AUTH VIEW REMAINS UNCHANGED ... */
+            // The daily content for the Home tab is based on the current user's preference
+            const dailyHomeContent = useMemo(() => {
+                const today = new Date();
+                const allContent = MOCK_CONTENT.map((c, i) => getDailyContent(new Date(today.getFullYear(), today.getMonth(), today.getDate() + i)));
+
+                const preference = currentUser?.pref || 'both';
+
+                if (preference === 'verse') {
+                    const verse = allContent.find(c => c.type === 'verse');
+                    return verse || allContent[0];
+                }
+                if (preference === 'inspo') {
+                    const inspo = allContent.find(c => c.type === 'inspo');
+                    return inspo || allContent[0];
+                }
+                
+                // For 'both' or fallback, use the standard daily rotation
+                return allContent[0];
+            }, [currentUser]);
+
+
+            // --- RENDER LOGIC ---
+
+            if (view === 'auth') {
                 return (
                     <div className={`h-full flex flex-col items-center justify-center p-8 bg-slate-950 text-white`}>
                         <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm">
@@ -495,8 +469,7 @@
                 );
             }
 
-            if(view === 'license') {
-                /* ... LICENSE VIEW REMAINS UNCHANGED ... */
+            if (view === 'license') {
                 return (
                     <div className={`h-full flex items-center justify-center p-8 bg-black`}>
                         <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm text-center">
@@ -504,7 +477,23 @@
                             <h2 className="text-xl font-bold text-white mb-2">Security Check</h2>
                             <p className="text-white/40 text-xs mb-6">Key: FAMILY-1234</p>
                             <input id="lic" placeholder="XXXX-XXXX" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-center text-white tracking-widest uppercase mb-6 outline-none"/>
-                            <button onClick={()=>document.getElementById('lic').value==='FAMILY-1234'?setView('app'):alert('Invalid')} className="w-full py-4 bg-white text-black font-bold rounded-2xl">Unlock</button>
+                            <button 
+                                onClick={async () => {
+                                    const licenseKey = document.getElementById('lic').value;
+                                    
+                                    // Placeholder for your future Firebase integration
+                                    const isValid = licenseKey === 'FAMILY-1234'; 
+                                    
+                                    if (isValid) {
+                                        setView('app');
+                                    } else {
+                                        alert('Invalid License Key.');
+                                    }
+                                }} 
+                                className="w-full py-4 bg-white text-black font-bold rounded-2xl"
+                            >
+                                Unlock
+                            </button>
                         </div>
                     </div>
                 );
@@ -547,7 +536,7 @@
                                 <div className="mx-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-1"></div>
 
                                 <div className="px-6 py-4 text-center flex-shrink-0">
-                                    <p className="font-verse text-2xl text-white leading-relaxed drop-shadow-md italic mb-2">
+                                    <p className="font-verse text-4xl text-white leading-relaxed italic mb-2">
                                         "{dailyHomeContent.text}"
                                     </p>
                                     
@@ -579,12 +568,12 @@
                                         
                                         <div className="space-y-3"> 
                                             {getDashboardEvents().length === 0 ? (
-                                                <div className="py-6 text-center text-white/40 text-sm italic">No activity for this day.</div>
+                                                <div className="py-6 text-center text-white/40 text-sm italic">No scheduled activity.</div>
                                             ) : (
                                                 getDashboardEvents().map(e => (
                                                     <div key={e.id} className="p-3 rounded-xl bg-white/5 flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                                                            <div className="text-lg"><Avatar type={family.members.find(m => m.name === e.owner)?.role || 'dad'} /></div>
+                                                            <div className="text-lg"><Avatar type={family.members.find(m => m.name === e.owner)?.role || 'default'} /></div>
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-center">
@@ -642,6 +631,7 @@
 
                                                     const dayStr = getLocalISODate(day); 
                                                     const isToday = dayStr === todayStr;
+                                                    // Only show dots for current user's events
                                                     const dayEvents = events.filter(e => e.owner === currentUser?.name && getLocalISODate(new Date(e.date)) === dayStr); 
 
                                                     return (
@@ -682,7 +672,7 @@
 
                                         {/* Daily Content */}
                                         <div className="p-3 rounded-xl bg-white/5 mb-4 text-center">
-                                            <p className="text-sm font-verse italic text-white/80">
+                                            <p className="font-verse text-xl italic text-white/80"> 
                                                 "{getDailyContent(currentCalendarDate).text}"
                                             </p>
                                             <span className="text-[9px] text-white/40 uppercase font-bold tracking-wider">
@@ -720,11 +710,10 @@
                                             Save Event
                                         </button>
 
-                                        <h4 className="text-white/50 text-xs font-bold uppercase mt-6 mb-2">Events on this day</h4>
-                                        {/* FLEXIBILITY FIX APPLIED: Removed fixed height and overflow constraint */}
+                                        <h4 className="text-white/50 text-xs font-bold uppercase mt-6 mb-2">{currentUser.name}'s Events on this day</h4>
                                         <div className="space-y-2">
                                             {getEventsForSelectedDay.length === 0 ? (
-                                                <p className="text-white/40 text-sm italic">No scheduled events.</p>
+                                                <p className="text-white/40 text-sm italic">No scheduled events for {currentUser.name}.</p>
                                             ) : (
                                                 getEventsForSelectedDay.map(e => (
                                                     <div key={e.id} className="p-3 rounded-xl bg-black/10 flex justify-between items-center">
@@ -742,7 +731,6 @@
                         )}
                         
                         {tab === 'notes' && (
-                            /* ... NOTES TAB REMAINS UNCHANGED ... */
                             <div className="pt-10 px-6 fade-in h-full">
                                 <h2 className="text-3xl font-bold mb-6">Creative Studio</h2>
                                 
@@ -771,7 +759,6 @@
                         )}
 
                         {tab === 'settings' && (
-                            /* ... SETTINGS TAB REMAINS UNCHANGED ... */
                             <div className="pt-10 px-6 fade-in">
                                 <h2 className="text-3xl font-bold mb-2">Settings</h2>
                                 <p className="text-sm text-white/50 mb-8">Personalize {currentUser.name}'s Experience</p>
